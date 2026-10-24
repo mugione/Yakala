@@ -54,6 +54,17 @@
 - 🔒 **Gizliliğe saygılı.** macOS sandbox'ında, ağ izni olmadan çalışır: internete bağlanamaz, veri toplamaz; görüntüler yalnızca senin Mac'inde kalır. [Kendin doğrula ↓](#güvenlik-ve-gizlilik)
 - 🪶 **Hafif ve yerel.** Swift ile yazıldı, Dock'ta yer kaplamaz, menü çubuğunda sessizce bekler. macOS 26 ve sonrasında Liquid Glass görünümüyle.
 
+## Son yenilikler
+
+**[1.3](https://github.com/mugione/Yakala/releases/tag/v1.3)** (24 Ekim 2026)
+
+- 🏷️ **Etiket (`L`):** Renkli kutunun içinde, her ekranda okunur yazı.
+- 🔍 **Büyüteç (`M`):** Bir bölgeyi 2 kat büyütür; gizlenen bilgiyi açığa çıkarmaz.
+- ✅ **Damga (`D`):** ✓ ✗ ? ! işaretleri.
+- ⚡ **Hızlı mod** ve ⌨️ **kısayolları değiştirme:** Ayarlar'dan.
+
+Tüm sürümlerin değişiklikleri: **[CHANGELOG.md](CHANGELOG.md)**
+
 ## Kurulum
 
 1. [Son sürümü](https://github.com/mugione/Yakala/releases/latest) aç ve **`Yakala-<sürüm>.dmg`** dosyasını indir.
@@ -285,15 +296,18 @@ Kodu Xcode'da düzenlemek için `Package.swift` dosyasını Xcode ile aç.
 | `Support/Yakala.entitlements` | Sandbox izinleri (ağ izni yok) |
 | `Support/` | `Info.plist`, uygulama simgesi ve simgeyi üreten betik |
 | `SECURITY.md` | Güvenlik politikası ve açık bildirme |
+| `CHANGELOG.md` | Sürümlerin değişiklik günlüğü |
 | `Tests/YakalaTests/` | Çizim motoru, model ve kaydetme testleri |
 </details>
 
 ### Yeni sürüm yayınlamak
 
-1. `Support/Info.plist` içinde `CFBundleShortVersionString` (ör. `1.2`) ve `CFBundleVersion` değerlerini artır.
-2. `./build.sh --dmg` çalıştır. `build/` klasöründe DMG ve yanında `.sha256` özeti oluşur.
-3. GitHub'da **Releases › Draft a new release**: etiket `v1.2`, `build/Yakala-1.2.dmg` ve
-   `build/Yakala-1.2.dmg.sha256` dosyalarını ekle, yayınla.
+1. `Support/Info.plist` içinde `CFBundleShortVersionString` (ör. `1.4`) ve `CFBundleVersion` değerlerini artır.
+2. [CHANGELOG.md](CHANGELOG.md)'de "Yayınlanmamış" altındaki maddeleri yeni sürümün başlığına taşı;
+   README'deki **Son yenilikler** bölümünü ve SECURITY.md'deki desteklenen sürümü güncelle.
+3. `./build.sh --dmg` çalıştır. `build/` klasöründe DMG ve yanında `.sha256` özeti oluşur.
+4. GitHub'da **Releases › Draft a new release**: etiket `v1.4`, `build/Yakala-1.4.dmg` ve
+   `build/Yakala-1.4.dmg.sha256` dosyalarını ekle. Açıklamaya CHANGELOG'daki o sürümün bölümünü yapıştır.
 
 ## Katkıda bulunma
 
