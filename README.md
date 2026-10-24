@@ -27,7 +27,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/ekran-goruntusu.png" width="820" alt="Yakala düzenleyicisi: üstte araçlar ve renkler, ortada yakalanan görüntü, altta Kopyala ve Kaydet">
+  <a href="docs/yakala-tanitim.mp4">
+    <img src="docs/onizleme.gif" width="820" alt="Yakala tanıtımı: ⇧⌘2 ile alan seçimi; ok, yuvarlak ve yazıyla işaretleme; bulanıklaştırma ve panoya kopyalama">
+  </a>
+  <br>
+  <sub>🔊 Seslendirmeli tanıtım videosunun tamamı (52 sn): <a href="docs/yakala-tanitim.mp4">docs/yakala-tanitim.mp4</a></sub>
 </p>
 
 ---
@@ -81,6 +85,10 @@ Yakala menü çubuğunda bir simge olarak çalışır; Dock'ta görünmez.
 | Menüyü açmak | Simgeye **sağ tık**: Tüm Ekranı Al, Son Görüntüyü Göster, Ayarlar…, Hakkında |
 
 ### Düzenleyici araçları
+
+<p align="center">
+  <img src="docs/ekran-goruntusu.png" width="720" alt="Yakala düzenleyicisi: üstte araçlar ve renkler, ortada yakalanan görüntü, altta Kopyala ve Kaydet">
+</p>
 
 | Araç | Tuş | İpucu |
 |---|:-:|---|
@@ -216,6 +224,9 @@ It lives in the menu bar; the interface is in Turkish.
 - **Redact:** blur or pixelate sensitive information.
 - **Copy & go:** ⌘C copies the result, closes the editor and returns you to the previous app.
 - **Private:** no network access, no analytics. Your screenshots never leave your Mac.
+
+**Demo:** see the animation at the top, or watch the full video with Turkish narration:
+[docs/yakala-tanitim.mp4](docs/yakala-tanitim.mp4).
 
 **Install:** download the latest `.dmg` from [Releases](https://github.com/mugione/Yakala/releases/latest)
 and drag Yakala to Applications. Because the app is not signed with a paid Developer ID, macOS will block the
