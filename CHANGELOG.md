@@ -8,6 +8,17 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 
 ## [Yayınlanmamış]
 
+## [1.4] - 2026-10-24
+
+### Eklenenler
+- **Güzelleştir:** Düzenleyicinin altındaki ✨ düğmesi sağda bir panel açar ve görüntüyü renkli bir
+  arka planın ortasına yerleştirir. Kopyala ve Kaydet sonucu bu hâliyle çıkarır.
+  - 8 hazır arka plan: Yakala, Gün batımı, Okyanus, Nane, Şeftali, Gece, Açık gri ve Saydam.
+  - Boşluk, köşe yuvarlaklığı ve gölge kaydırıcıları.
+  - Oranlar: Otomatik, 16:9, 4:3, 1:1; görüntü hep ortada kalır.
+  - İsteğe bağlı macOS pencere çerçevesi (●●●). Pencere yakalamalarında pencerenin kendi şekli kullanılır.
+  - Son seçilen ayarlar hatırlanır.
+
 ## [1.3] - 2026-10-24
 
 ### Eklenenler
@@ -68,7 +79,8 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 - Ayarlar: Mac açılınca başlatma, kayıt klasörü, otomatik kayıt.
 - Hakkında paneli, uygulama simgesi ve tek dosyalık DMG kurulumu.
 
-[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.3...HEAD
+[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.4...HEAD
+[1.4]: https://github.com/mugione/Yakala/releases/tag/v1.4
 [1.3]: https://github.com/mugione/Yakala/releases/tag/v1.3
 [1.2]: https://github.com/mugione/Yakala/releases/tag/v1.2
 [1.1]: https://github.com/mugione/Yakala/releases/tag/v1.1

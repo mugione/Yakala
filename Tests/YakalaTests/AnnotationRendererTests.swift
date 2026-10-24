@@ -246,6 +246,58 @@ struct AnnotationRendererTests {
         #expect(Shortcut(event: shiftOnly) == nil)
     }
 
+    @Test func beautifyLayoutAddsPaddingAndKeepsTheRatio() {
+        var settings = BeautifySettings()
+        settings.padding = 50
+        let free = BeautifyLayout(imageSize: CGSize(width: 200, height: 100), settings: settings, isWindowCapture: false)
+        #expect(free.canvasSize == CGSize(width: 300, height: 200))
+        #expect(free.imageRect == CGRect(x: 50, y: 50, width: 200, height: 100))
+
+        settings.ratio = .square
+        settings.windowFrame = true
+        let square = BeautifyLayout(imageSize: CGSize(width: 200, height: 100), settings: settings, isWindowCapture: false)
+        #expect(square.canvasSize.width == square.canvasSize.height)
+        #expect(square.imageRect.minY == square.contentRect.minY + BeautifyLayout.frameBarHeight)
+
+        // Pencere yakalamada çerçeve eklenmez.
+        let window = BeautifyLayout(imageSize: CGSize(width: 200, height: 100), settings: settings, isWindowCapture: true)
+        #expect(!window.hasFrameBar)
+    }
+
+    @Test func beautifiedImageHasBackgroundAndTheScreenshotInTheMiddle() throws {
+        let capture = makeStripedCapture()
+        var settings = BeautifySettings()
+        settings.padding = 40
+        let renderer = AnnotationRenderer(capture: capture)
+        let layout = renderer.beautifyLayout(settings)
+        let output = try #require(renderer.renderFlattened([], beautify: settings))
+        let pixels = Pixels(output.image)
+
+        #expect(output.image.width == Int(layout.canvasSize.width * 2))
+        // Sol üst köşe: Yakala renk geçişinin mor ucu.
+        let corner = pixels[2, 2]
+        #expect(corner.b > 200 && corner.r > 80 && corner.g < 120)
+        // Görüntünün sol üstündeki yeşil işaret, boşluk kadar içeride.
+        #expect(pixels[Int(layout.imageRect.minX * 2) + 38, Int(layout.imageRect.minY * 2) + 18].isGreen)
+    }
+
+    @Test func transparentBackgroundAndWindowFrame() throws {
+        let capture = makeStripedCapture()
+        var settings = BeautifySettings()
+        settings.background = .transparent
+        settings.windowFrame = true
+        let renderer = AnnotationRenderer(capture: capture)
+        let layout = renderer.beautifyLayout(settings)
+        let output = try #require(renderer.renderFlattened([], beautify: settings))
+        let pixels = Pixels(output.image)
+
+        #expect(output.hasTransparency)
+        #expect(pixels[2, 2].a == 0)
+        // Çerçeve çubuğu: görüntünün hemen üstünde açık gri.
+        let bar = pixels[Int(layout.contentRect.midX * 2), Int((layout.contentRect.minY + 4) * 2)]
+        #expect(bar.r > 220 && bar.g > 220 && bar.b > 220 && bar.a == 255)
+    }
+
     @Test func writesSampleForVisualCheck() throws {
         guard let path = ProcessInfo.processInfo.environment["YAKALA_SAMPLE_PNG"] else { return }
         let capture = makeStripedCapture()

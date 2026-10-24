@@ -18,6 +18,18 @@ struct SnapshotTests {
         editor.model.selectTool(.ellipse)
         try await snapshot(editor.window, to: "\(folder)/duzenleyici.png")
 
+        let beautified = EditorWindowController(capture: makeGradientCapture())
+        beautified.model.add(Annotation(shape: .arrow(from: CGPoint(x: 520, y: 330), to: CGPoint(x: 350, y: 180)),
+                                        color: .red, lineWidth: .medium))
+        beautified.model.setBeautifyOn(true)
+        try await snapshot(beautified.window, to: "\(folder)/guzellestir.png")
+        let export = beautified.model.renderer.renderFlattened(beautified.model.annotations,
+                                                               beautify: beautified.model.beautify)
+        if let export {
+            try NSBitmapImageRep(cgImage: export.image).representation(using: .png, properties: [:])?
+                .write(to: URL(fileURLWithPath: "\(folder)/guzellestir-cikti.png"))
+        }
+
         let settings = SettingsWindowController()
         try await snapshot(settings.window, to: "\(folder)/ayarlar.png")
     }

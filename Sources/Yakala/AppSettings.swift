@@ -15,6 +15,7 @@ final class AppSettings {
         static let afterCapture = "afterCapture"
         static let areaShortcut = "areaShortcut"
         static let windowShortcut = "windowShortcut"
+        static let beautify = "beautify"
     }
 
     /// Yakalamadan hemen sonra ne olacağı. Kopyala ve Kaydet "hızlı mod"dur: düzenleyici açılmaz.
@@ -61,6 +62,8 @@ final class AppSettings {
     private(set) var afterCapture: AfterCapture
     private(set) var areaShortcut: Shortcut
     private(set) var windowShortcut: Shortcut
+    /// Güzelleştir panelinde son seçilen ayarlar; yeni görüntülerde aynı gelir.
+    private(set) var beautify: BeautifySettings
     /// Ayarlarda yeni kısayol kaydedilirken global kısayollar geçici olarak kapatılır.
     private(set) var isRecordingShortcut = false
     /// Kaydedilemeyen kısayolların açıklaması (başka bir uygulama kullanıyorsa).
@@ -74,6 +77,8 @@ final class AppSettings {
         afterCapture = defaults.string(forKey: Keys.afterCapture).flatMap(AfterCapture.init(rawValue:)) ?? .editor
         areaShortcut = Self.loadShortcut(Keys.areaShortcut) ?? .defaultArea
         windowShortcut = Self.loadShortcut(Keys.windowShortcut) ?? .defaultWindow
+        beautify = defaults.data(forKey: Keys.beautify)
+            .flatMap { try? JSONDecoder().decode(BeautifySettings.self, from: $0) } ?? BeautifySettings()
         saveFolder = Self.restoreBookmarkedFolder() ?? Self.defaultSaveFolder
         refreshLaunchAtLogin()
     }
@@ -81,6 +86,11 @@ final class AppSettings {
     func setAfterCapture(_ value: AfterCapture) {
         afterCapture = value
         UserDefaults.standard.set(value.rawValue, forKey: Keys.afterCapture)
+    }
+
+    func setBeautify(_ settings: BeautifySettings) {
+        beautify = settings
+        UserDefaults.standard.set(try? JSONEncoder().encode(settings), forKey: Keys.beautify)
     }
 
     // MARK: - Kısayollar

@@ -13,14 +13,25 @@ struct EditorCanvas: NSViewRepresentable {
         CanvasView(model: model, insets: insets)
     }
 
-    func updateNSView(_ nsView: CanvasView, context: Context) {}
+    func updateNSView(_ nsView: CanvasView, context: Context) {
+        // Güzelleştir paneli açılıp kapanınca sağ kenar değişir.
+        nsView.insets = insets
+    }
 }
 
 /// Görüntüyü pencereye sığdırarak gösterir; fareyle şekil çizdirir, şekilleri taşıtır
 /// ve metin kutusunu yönetir. Fare ve klavye ayrıntıları AppKit'te daha kolay olduğu için NSView.
 final class CanvasView: NSView, NSTextFieldDelegate {
     private let model: EditorModel
-    private let insets: NSEdgeInsets
+    var insets: NSEdgeInsets {
+        didSet {
+            guard insets.left != oldValue.left || insets.right != oldValue.right
+                || insets.top != oldValue.top || insets.bottom != oldValue.bottom else { return }
+            needsDisplay = true
+            layoutTextField()
+            window?.invalidateCursorRects(for: self)
+        }
+    }
 
     private var dragStart: CGPoint?
     private var lastDragPoint: CGPoint?
@@ -63,25 +74,41 @@ final class CanvasView: NSView, NSTextFieldDelegate {
 
     private var imageSize: CGSize { model.capture.pointSize }
 
-    /// Görüntünün görünümde sığdırıldığı alan. Görüntü küçültülür ama büyütülmez.
-    private var imageRect: CGRect {
+    /// Güzelleştir açıksa arka plan ve çerçeveyle birlikte bütün kompozisyonun yerleşimi.
+    private var beautifyLayout: BeautifyLayout? {
+        model.isBeautifyOn ? model.renderer.beautifyLayout(model.beautify) : nil
+    }
+
+    /// Görünümde gösterilen şeyin (görüntü ya da güzelleştirilmiş kompozisyon) sığdırıldığı alan.
+    /// Küçültülür ama büyütülmez.
+    private var compositionRect: CGRect {
+        let size = beautifyLayout?.canvasSize ?? imageSize
         let available = CGRect(
             x: insets.left,
             y: insets.top,
             width: bounds.width - insets.left - insets.right,
             height: bounds.height - insets.top - insets.bottom
         )
-        let zoom = max(0.01, min(1, available.width / imageSize.width, available.height / imageSize.height))
-        let size = CGSize(width: imageSize.width * zoom, height: imageSize.height * zoom)
+        let zoom = max(0.01, min(1, available.width / size.width, available.height / size.height))
+        let fitted = CGSize(width: size.width * zoom, height: size.height * zoom)
         return CGRect(
-            x: (available.midX - size.width / 2).rounded(),
-            y: (available.midY - size.height / 2).rounded(),
-            width: size.width,
-            height: size.height
+            x: (available.midX - fitted.width / 2).rounded(),
+            y: (available.midY - fitted.height / 2).rounded(),
+            width: fitted.width,
+            height: fitted.height
         )
     }
 
-    private var zoom: CGFloat { imageRect.width / imageSize.width }
+    private var zoom: CGFloat { compositionRect.width / (beautifyLayout?.canvasSize.width ?? imageSize.width) }
+
+    /// Ekran görüntüsünün (çizimlerin koordinat sisteminin) görünümdeki yeri.
+    private var imageRect: CGRect {
+        let composition = compositionRect
+        let zoom = zoom
+        let offset = beautifyLayout?.imageRect.origin ?? .zero
+        return CGRect(x: composition.minX + offset.x * zoom, y: composition.minY + offset.y * zoom,
+                      width: imageSize.width * zoom, height: imageSize.height * zoom)
+    }
 
     /// Fare konumunu görüntü koordinatına çevirir; görüntünün dışına taşmaz.
     private func imagePoint(for event: NSEvent) -> CGPoint {
@@ -116,6 +143,18 @@ final class CanvasView: NSView, NSTextFieldDelegate {
     }
 
     private func drawContents(in context: CGContext) {
+        if model.isBeautifyOn {
+            let composition = compositionRect
+            context.saveGState()
+            context.translateBy(x: composition.minX, y: composition.minY)
+            context.scaleBy(x: zoom, y: zoom)
+            context.interpolationQuality = .high
+            model.renderer.drawBeautified(model.visibleAnnotations, settings: model.beautify, in: context)
+            context.restoreGState()
+            drawSelectionOutline()
+            return
+        }
+
         let rect = imageRect
         let shadow = NSColor.black.withAlphaComponent(0.28).cgColor
 
@@ -145,7 +184,10 @@ final class CanvasView: NSView, NSTextFieldDelegate {
             context.endTransparencyLayer()
         }
         context.restoreGState()
+        drawSelectionOutline()
+    }
 
+    private func drawSelectionOutline() {
         if let selected = model.selectedAnnotation, selected.id != model.editingTextID {
             let outline = NSBezierPath(rect: viewRect(for: selected.bounds).insetBy(dx: -4, dy: -4))
             outline.lineWidth = 1

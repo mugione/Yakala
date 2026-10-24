@@ -44,6 +44,7 @@
 - ⚡ **Tek kısayolla yakala.** **⇧⌘2**'ye bas, ekran donar; fareyle alanı seç. Tek tık tüm ekranı alır.
 - 🪟 **Pencere yakala.** **⇧⌘1**'e bas ve bir pencereye tıkla; köşeleri saydam, tam o pencere alınır.
 - ✏️ **İşaretle.** Ok, dikdörtgen, yuvarlak, kalem, vurgulayıcı, metin, etiket, numaralı adımlar (①②③), damgalar (✓ ✗ ? !) ve büyüteç; 7 renk, 3 kalınlık.
+- ✨ **Güzelleştir.** Görüntüyü renkli bir arka planın ortasına yerleştir: boşluk, yuvarlak köşe, gölge, 16:9 / 4:3 / 1:1 oranları ve isteğe bağlı pencere çerçevesi (●●●). Paylaşıma hazır.
 - 🙈 **Gizle.** Şifreleri, e-postaları, kişisel bilgileri bulanıklaştır ya da pikselleştir.
 - 📋 **Kopyala ya da kaydet, devam et.** ⌘C ya da ⌘S'den sonra pencere kapanır ve çalıştığın uygulamaya dönersin: hemen ⌘V.
 - ⚡ **Hızlı mod.** İstersen düzenleyici hiç açılmaz: görüntü yakalandığı anda panoya kopyalanır ya da kaydedilir.
@@ -56,12 +57,13 @@
 
 ## Son yenilikler
 
-**[1.3](https://github.com/mugione/Yakala/releases/tag/v1.3)** (24 Ekim 2026)
+**[1.4](https://github.com/mugione/Yakala/releases/tag/v1.4)** (24 Ekim 2026)
 
-- 🏷️ **Etiket (`L`):** Renkli kutunun içinde, her ekranda okunur yazı.
-- 🔍 **Büyüteç (`M`):** Bir bölgeyi 2 kat büyütür; gizlenen bilgiyi açığa çıkarmaz.
-- ✅ **Damga (`D`):** ✓ ✗ ? ! işaretleri.
-- ⚡ **Hızlı mod** ve ⌨️ **kısayolları değiştirme:** Ayarlar'dan.
+- ✨ **Güzelleştir:** Düzenleyicinin altındaki düğmeyle sağda bir panel açılır. 8 hazır arka plan
+  (saydam dahil), boşluk, köşe, gölge, 16:9 / 4:3 / 1:1 oranları ve pencere çerçevesi.
+  Son seçtiğin ayarlar hatırlanır.
+
+**[1.3](https://github.com/mugione/Yakala/releases/tag/v1.3)**: etiket, büyüteç, damga, hızlı mod ve kısayolları değiştirme.
 
 Tüm sürümlerin değişiklikleri: **[CHANGELOG.md](CHANGELOG.md)**
 
@@ -155,10 +157,10 @@ codesign -d --entitlements - /Applications/Yakala.app
 **İndirdiğin DMG'nin değiştirilmediği.** Sürüm sayfasındaki `.sha256` dosyasını DMG ile aynı klasöre indir:
 
 ```bash
-shasum -a 256 -c Yakala-1.3.dmg.sha256
+shasum -a 256 -c Yakala-1.4.dmg.sha256
 ```
 
-`Yakala-1.3.dmg: OK` görmelisin.
+`Yakala-1.4.dmg: OK` görmelisin.
 
 **Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
 
@@ -203,6 +205,18 @@ Yakala menü çubuğunda bir simge olarak çalışır; Dock'ta görünmez.
 | Pikselleştir | `X` | Yazıları gizlemek için bulanıklaştırmadan daha güvenli |
 
 Renk ya da kalınlık seçtiğinde bir şekil seçiliyse o şekil de değişir.
+
+### Güzelleştir
+
+Düzenleyicinin altındaki **✨ Güzelleştir** düğmesine bas; sağda bir panel açılır ve görüntü renkli bir
+arka planın ortasına yerleşir. Kopyala ve Kaydet bu hâliyle çıkarır.
+
+- **Arka plan:** 8 hazır seçenek: Yakala, Gün batımı, Okyanus, Nane, Şeftali, Gece, Açık gri ve Saydam (PNG'de saydam kalır).
+- **Boşluk, Köşe, Gölge:** kaydırıcılarla. Pencere yakalamalarında pencerenin kendi köşeleri kullanılır.
+- **Oran:** Otomatik, 16:9, 4:3 ya da 1:1; görüntü hep ortada kalır.
+- **Pencere çerçevesi:** görüntünün üstüne macOS penceresi gibi ●●● başlık çubuğu ekler.
+
+Seçtiğin ayarlar bir sonraki sefer için hatırlanır. Düğmeye tekrar basınca görüntü eski hâline döner.
 
 ### Ayarlar
 
@@ -302,12 +316,12 @@ Kodu Xcode'da düzenlemek için `Package.swift` dosyasını Xcode ile aç.
 
 ### Yeni sürüm yayınlamak
 
-1. `Support/Info.plist` içinde `CFBundleShortVersionString` (ör. `1.4`) ve `CFBundleVersion` değerlerini artır.
+1. `Support/Info.plist` içinde `CFBundleShortVersionString` (ör. `1.5`) ve `CFBundleVersion` değerlerini artır.
 2. [CHANGELOG.md](CHANGELOG.md)'de "Yayınlanmamış" altındaki maddeleri yeni sürümün başlığına taşı;
    README'deki **Son yenilikler** bölümünü ve SECURITY.md'deki desteklenen sürümü güncelle.
 3. `./build.sh --dmg` çalıştır. `build/` klasöründe DMG ve yanında `.sha256` özeti oluşur.
-4. GitHub'da **Releases › Draft a new release**: etiket `v1.4`, `build/Yakala-1.4.dmg` ve
-   `build/Yakala-1.4.dmg.sha256` dosyalarını ekle. Açıklamaya CHANGELOG'daki o sürümün bölümünü yapıştır.
+4. GitHub'da **Releases › Draft a new release**: etiket `v1.5`, `build/Yakala-1.5.dmg` ve
+   `build/Yakala-1.5.dmg.sha256` dosyalarını ekle. Açıklamaya CHANGELOG'daki o sürümün bölümünü yapıştır.
 
 ## Katkıda bulunma
 
@@ -330,6 +344,8 @@ It lives in the menu bar; the interface is in Turkish.
 
 - **Capture:** press **⇧⌘2**, drag to select an area (single click for the whole screen), or **⇧⌘1** and click a window.
 - **Annotate:** arrow, rectangle, ellipse, pen, highlighter, text, labels, numbered steps, stamps and a magnifier; 7 colors, 3 line widths, undo/redo.
+- **Beautify:** place the screenshot on a gradient background with padding, rounded corners, shadow,
+  16:9 / 4:3 / 1:1 ratios and an optional window frame; your last settings are remembered.
 - **Quick mode & custom shortcuts:** skip the editor and copy or save instantly; change the shortcuts in Settings.
 - **Redact:** blur or pixelate sensitive information.
 - **Copy & go:** ⌘C copies (⌘S saves) the result, closes the editor and returns you to the previous app.

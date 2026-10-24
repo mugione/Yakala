@@ -104,11 +104,28 @@ private struct EditorView: View {
     /// Parametre: yeni bir dosyaya mı kaydedilecek (Farklı Kaydet).
     let onSave: (Bool) -> Void
 
+    /// Güzelleştir paneli açıkken görüntü panelin soluna sığdırılır.
+    private var canvasInsets: NSEdgeInsets {
+        var insets = layout.canvasInsets
+        if model.isBeautifyOn {
+            insets.right += BeautifyPanel.width + layout.margin
+        }
+        return insets
+    }
+
     var body: some View {
-        EditorCanvas(model: model, insets: layout.canvasInsets)
+        EditorCanvas(model: model, insets: canvasInsets)
             .background(Color(nsColor: .underPageBackgroundColor))
             .overlay(alignment: .top) {
                 toolbar.padding(.top, layout.titlebarHeight)
+            }
+            .overlay(alignment: .topTrailing) {
+                if model.isBeautifyOn {
+                    BeautifyPanel(model: model)
+                        .padding(.top, layout.titlebarHeight + layout.barHeight + layout.margin)
+                        .padding(.bottom, layout.barHeight + layout.margin * 2)
+                        .padding(.trailing, layout.margin)
+                }
             }
             .overlay(alignment: .bottom) {
                 bottomBar
@@ -192,10 +209,19 @@ private struct EditorView: View {
 
     // MARK: - Alt çubuk
 
+    /// Kopyalanacak / kaydedilecek görüntünün piksel boyutu.
+    private var outputSizeText: String {
+        guard model.isBeautifyOn else {
+            return "\(model.capture.image.width) × \(model.capture.image.height)"
+        }
+        let size = model.renderer.beautifyLayout(model.beautify).canvasSize
+        return "\(Int(size.width * model.capture.scale)) × \(Int(size.height * model.capture.scale))"
+    }
+
     private var bottomBar: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
-                Text(verbatim: "\(model.capture.image.width) × \(model.capture.image.height)")
+                Text(verbatim: outputSizeText)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                 if let savedURL = model.savedURL {
@@ -226,6 +252,14 @@ private struct EditorView: View {
                 .floatingButton(prominent: false)
                 .help("Yeni bir dosyaya kaydet ve pencereyi kapat (⇧⌘S)")
             }
+
+            Button {
+                model.setBeautifyOn(!model.isBeautifyOn)
+            } label: {
+                Label("Güzelleştir", systemImage: model.isBeautifyOn ? "sparkles.rectangle.stack.fill" : "sparkles")
+            }
+            .floatingButton(prominent: model.isBeautifyOn)
+            .help("Arka plan, boşluk, gölge ve çerçeve ekle")
 
             Button(action: onCopy) {
                 Label("Kopyala", systemImage: "doc.on.doc")
@@ -296,6 +330,106 @@ private struct ColorSwatch: View {
         .buttonStyle(.plain)
         .help(color.title)
         .accessibilityLabel(color.title)
+    }
+}
+
+/// Güzelleştir ayarları: arka plan, boşluk, köşe, gölge, oran ve pencere çerçevesi.
+private struct BeautifyPanel: View {
+    static let width: CGFloat = 270
+    let model: EditorModel
+
+    private var isWindowCapture: Bool { model.capture.hasTransparency }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Güzelleştir").font(.headline)
+
+                section("Arka plan") {
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(48), spacing: 10), count: 4), spacing: 10) {
+                        ForEach(BeautifyBackground.allCases) { background in
+                            BackgroundSwatch(background: background, isSelected: model.beautify.background == background) {
+                                model.updateBeautify { $0.background = background }
+                            }
+                        }
+                    }
+                }
+
+                section("Boşluk") {
+                    Slider(value: binding(\.padding), in: BeautifySettings.paddingRange)
+                }
+                section("Köşe") {
+                    Slider(value: binding(\.cornerRadius), in: BeautifySettings.cornerRange)
+                        .disabled(isWindowCapture)
+                }
+                section("Gölge") {
+                    Slider(value: binding(\.shadow), in: 0...1)
+                }
+                section("Oran") {
+                    Picker("Oran", selection: binding(\.ratio)) {
+                        ForEach(BeautifyRatio.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+
+                Toggle("Pencere çerçevesi (●●●)", isOn: binding(\.windowFrame))
+                    .disabled(isWindowCapture)
+                if isWindowCapture {
+                    Text("Pencere yakalamada köşe ve çerçeve pencerenin kendisinden gelir.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(18)
+        }
+        .frame(width: Self.width)
+        .floatingPanel()
+    }
+
+    private func binding<Value>(_ keyPath: WritableKeyPath<BeautifySettings, Value>) -> Binding<Value> {
+        Binding(get: { model.beautify[keyPath: keyPath] },
+                set: { value in model.updateBeautify { $0[keyPath: keyPath] = value } })
+    }
+
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.subheadline).foregroundStyle(.secondary)
+            content()
+        }
+    }
+}
+
+private struct BackgroundSwatch: View {
+    let background: BeautifyBackground
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(fill)
+                .overlay {
+                    if background == .transparent {
+                        Image(systemName: "square.dashed").foregroundStyle(.secondary)
+                    }
+                }
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.primary.opacity(0.15)))
+                .frame(width: 44, height: 44)
+                .padding(2)
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.accentColor, lineWidth: 2.5).opacity(isSelected ? 1 : 0))
+        }
+        .buttonStyle(.plain)
+        .help(background.title)
+        .accessibilityLabel(background.title)
+    }
+
+    private var fill: AnyShapeStyle {
+        let colors = background.colors.map { Color(nsColor: $0) }
+        guard colors.count == 2 else { return AnyShapeStyle(Color.primary.opacity(0.05)) }
+        return AnyShapeStyle(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
     }
 }
 

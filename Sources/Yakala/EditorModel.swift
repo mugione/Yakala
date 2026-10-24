@@ -24,6 +24,9 @@ final class EditorModel {
     private(set) var stampKind: StampKind = .check
     /// Görüntünün kaydedildiği dosya. Bir kez kaydedildikten sonra Kaydet (⌘S) bu dosyayı günceller.
     private(set) var savedURL: URL?
+    /// Güzelleştir açıkken kopyalanan ve kaydedilen görüntü arka plan ve çerçeveyle birlikte olur.
+    private(set) var isBeautifyOn = false
+    private(set) var beautify = AppSettings.shared.beautify
 
     private var undoStack: [[Annotation]] = []
     private var redoStack: [[Annotation]] = []
@@ -82,6 +85,18 @@ final class EditorModel {
     func setLineWidth(_ lineWidth: LineWidth) {
         self.lineWidth = lineWidth
         updateSelected { $0.lineWidth = lineWidth }
+    }
+
+    // MARK: - Güzelleştir
+
+    func setBeautifyOn(_ on: Bool) {
+        isBeautifyOn = on
+    }
+
+    /// Ayarlar hem bu görüntüye uygulanır hem de sonraki görüntüler için hatırlanır.
+    func updateBeautify(_ change: (inout BeautifySettings) -> Void) {
+        change(&beautify)
+        AppSettings.shared.setBeautify(beautify)
     }
 
     // MARK: - Şekiller
@@ -167,7 +182,7 @@ final class EditorModel {
     /// Şekillerin işlendiği son görüntü.
     func flattened() -> Capture {
         beforeExport?()
-        return renderer.renderFlattened(annotations) ?? capture
+        return renderer.renderFlattened(annotations, beautify: isBeautifyOn ? beautify : nil) ?? capture
     }
 
     func copy() {

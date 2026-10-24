@@ -30,16 +30,73 @@ final class AnnotationRenderer {
         }
     }
 
-    /// İşaretlemelerin işlendiği tam çözünürlüklü görüntü. Şekil yoksa orijinal görüntü döner.
-    func renderFlattened(_ annotations: [Annotation]) -> Capture? {
-        guard !annotations.isEmpty else { return capture }
-        let image = capture.image
-        let colorSpace = image.colorSpace.flatMap { $0.supportsOutput ? $0 : nil }
+    /// Güzelleştirme ayarlarına göre yerleşim; ekrandaki tuval de dışa aktarma da bunu kullanır.
+    func beautifyLayout(_ settings: BeautifySettings) -> BeautifyLayout {
+        BeautifyLayout(imageSize: capture.pointSize, settings: settings, isWindowCapture: capture.hasTransparency)
+    }
+
+    /// Arka plan, gölge, köşe ve çerçeveyle birlikte bütün kompozisyonu çizer.
+    /// `context` sol üst orijinli ve nokta ölçeğinde; (0, 0) kompozisyonun sol üst köşesi.
+    func drawBeautified(_ annotations: [Annotation], settings: BeautifySettings, in context: CGContext) {
+        let layout = beautifyLayout(settings)
+        let canvas = CGRect(origin: .zero, size: layout.canvasSize)
+
+        let colors = settings.background.colors.map(\.cgColor)
+        if colors.count == 2,
+           let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors as CFArray,
+                                     locations: [0, 1]) {
+            context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: canvas.maxX, y: canvas.maxY), options: [])
+        }
+
+        let shadowColor = NSColor.black.withAlphaComponent(0.55 * settings.shadow).cgColor
+        let shadowBlur = 8 + 40 * settings.shadow
+        let shadowOffset = CGSize(width: 0, height: 10 * settings.shadow)
+
+        context.saveGState()
+        if capture.hasTransparency {
+            // Pencere görüntüsü: şekli kendi saydam köşeleri belirler; gölge o şekle düşer.
+            context.setShadow(offset: shadowOffset, blur: shadowBlur, color: shadowColor)
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+            context.translateBy(x: layout.imageRect.minX, y: layout.imageRect.minY)
+            draw(annotations, in: context)
+            context.endTransparencyLayer()
+            context.restoreGState()
+            return
+        }
+
+        let radius = min(settings.cornerRadius, layout.contentRect.width / 2, layout.contentRect.height / 2)
+        let shape = CGPath(roundedRect: layout.contentRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        context.setShadow(offset: shadowOffset, blur: shadowBlur, color: shadowColor)
+        context.addPath(shape)
+        context.setFillColor(NSColor.white.cgColor)
+        context.fillPath()
+        context.restoreGState()
+
+        context.saveGState()
+        context.addPath(shape)
+        context.clip()
+        if layout.hasFrameBar {
+            drawFrameBar(in: CGRect(x: layout.contentRect.minX, y: layout.contentRect.minY,
+                                    width: layout.contentRect.width, height: BeautifyLayout.frameBarHeight),
+                         context: context)
+        }
+        context.translateBy(x: layout.imageRect.minX, y: layout.imageRect.minY)
+        draw(annotations, in: context)
+        context.restoreGState()
+    }
+
+    /// İşaretlemelerin işlendiği tam çözünürlüklü görüntü. Şekil ve güzelleştirme yoksa orijinal görüntü döner.
+    func renderFlattened(_ annotations: [Annotation], beautify: BeautifySettings? = nil) -> Capture? {
+        guard !annotations.isEmpty || beautify != nil else { return capture }
+        let size = beautify.map { beautifyLayout($0).canvasSize } ?? capture.pointSize
+        let width = Int((size.width * capture.scale).rounded())
+        let height = Int((size.height * capture.scale).rounded())
+        let colorSpace = capture.image.colorSpace.flatMap { $0.supportsOutput ? $0 : nil }
             ?? CGColorSpace(name: CGColorSpace.sRGB)!
         guard let context = CGContext(
             data: nil,
-            width: image.width,
-            height: image.height,
+            width: width,
+            height: height,
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: colorSpace,
@@ -47,13 +104,32 @@ final class AnnotationRenderer {
         ) else { return nil }
 
         // Orijini sol üste taşı ve nokta ölçeğine geç (Retina'da 1 nokta = 2 piksel).
-        context.translateBy(x: 0, y: CGFloat(image.height))
+        context.translateBy(x: 0, y: CGFloat(height))
         context.scaleBy(x: capture.scale, y: -capture.scale)
         context.interpolationQuality = .high
-        draw(annotations, in: context)
+        if let beautify {
+            drawBeautified(annotations, settings: beautify, in: context)
+        } else {
+            draw(annotations, in: context)
+        }
 
         guard let output = context.makeImage() else { return nil }
-        return Capture(image: output, scale: capture.scale, date: capture.date, hasTransparency: capture.hasTransparency)
+        let transparent = beautify.map { $0.background == .transparent } ?? capture.hasTransparency
+        return Capture(image: output, scale: capture.scale, date: capture.date, hasTransparency: transparent)
+    }
+
+    /// macOS penceresi gibi açık gri başlık çubuğu ve üç renkli düğme.
+    private func drawFrameBar(in rect: CGRect, context: CGContext) {
+        context.setFillColor(NSColor(srgbRed: 0.92, green: 0.92, blue: 0.93, alpha: 1).cgColor)
+        context.fill(rect)
+        context.setFillColor(NSColor(srgbRed: 0.82, green: 0.82, blue: 0.84, alpha: 1).cgColor)
+        context.fill(CGRect(x: rect.minX, y: rect.maxY - 1, width: rect.width, height: 1))
+        let dots: [(CGFloat, CGFloat, CGFloat)] = [(1.0, 0.37, 0.34), (1.0, 0.74, 0.18), (0.16, 0.78, 0.25)]
+        for (index, color) in dots.enumerated() {
+            context.setFillColor(NSColor(srgbRed: color.0, green: color.1, blue: color.2, alpha: 1).cgColor)
+            let x = rect.minX + 14 + CGFloat(index) * 20
+            context.fillEllipse(in: CGRect(x: x - 6, y: rect.midY - 6, width: 12, height: 12))
+        }
     }
 
     // MARK: - Şekiller
