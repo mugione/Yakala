@@ -5,6 +5,7 @@
 #   ./build.sh --install  → derler, Uygulamalar klasörüne kurar ve oradan açar
 #                           (yazılamıyorsa ~/Applications; INSTALL_DIR ile başka bir klasör seçilebilir)
 #   ./build.sh --dmg      → derler ve paylaşılabilir tek dosyalık kurulum paketi üretir: build/Yakala-<sürüm>.dmg
+#                           (yanında SHA-256 özeti: build/Yakala-<sürüm>.dmg.sha256)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -29,8 +30,9 @@ cp Support/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns" # yeniden üretme
 
 # Xcode'da oluşturulan "Apple Development" sertifikası varsa onunla imzala: imza sabit kalır,
 # ekran kaydı izni yeniden derlemelerde kaybolmaz. Yoksa ad-hoc ("-") imzala.
+# Sandbox ve izinler Support/Yakala.entitlements'ta; "runtime" notarization için gereken sertleştirilmiş çalışma ortamı.
 IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')}"
-codesign --force --sign "${IDENTITY:--}" "$APP"
+codesign --force --options runtime --entitlements Support/Yakala.entitlements --sign "${IDENTITY:--}" "$APP"
 
 echo "Hazır: $APP (imza: ${IDENTITY:-ad-hoc})"
 
@@ -83,6 +85,9 @@ case "$MODE" in
     ln -s /Applications "$STAGING/Uygulamalar"
     rm -f "$DMG"
     hdiutil create -volname "Yakala" -srcfolder "$STAGING" -fs HFS+ -format UDZO -quiet "$DMG"
+    # İndiren kişi dosyanın değiştirilmediğini "shasum -a 256 -c Yakala-<sürüm>.dmg.sha256" ile doğrulayabilir.
+    (cd build && shasum -a 256 "Yakala-$VERSION.dmg" > "Yakala-$VERSION.dmg.sha256")
     echo "Kurulum dosyası: $DMG"
+    echo "SHA-256: $(cut -d' ' -f1 "$DMG.sha256")  ($DMG.sha256)"
     ;;
 esac

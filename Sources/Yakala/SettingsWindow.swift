@@ -121,7 +121,7 @@ private struct SettingsView: View {
     }
 
     private func displayPath(_ url: URL) -> String {
-        (url.path as NSString).abbreviatingWithTildeInPath
+        AppSettings.displayPath(url)
     }
 
     private func chooseFolder() {

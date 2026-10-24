@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Yakala macOS'un App Sandbox'ında çalışır. Uygulamanın yapabildikleri yalnızca aşağıdakilerle sınırlıdır.
+  Ağ izni (com.apple.security.network.client / .server) bilerek YOKTUR: macOS, Yakala'nın internete
+  bağlanmasını engeller. Kurulu uygulamada nasıl doğrulanacağı README'nin "Güvenlik ve gizlilik" bölümünde.
+-->
+<plist version="1.0">
+<dict>
+	<!-- Sandbox açık. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Kullanıcının kaydetme / klasör seçme pencerelerinde seçtiği dosya ve klasörlere yazabilir. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Seçilen kayıt klasörüne sonraki açılışlarda da erişebilmek için (güvenli yer imi). -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+	<!-- Varsayılan kayıt klasörü ~/Pictures/Yakala olduğu için Resimler klasörü. -->
+	<key>com.apple.security.assets.pictures.read-write</key>
+	<true/>
+</dict>
+</plist>

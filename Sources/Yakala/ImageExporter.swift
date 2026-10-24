@@ -23,8 +23,17 @@ enum ImageExporter {
         guard let png = bitmap(for: capture).representation(using: .png, properties: [:]) else {
             throw CocoaError(.fileWriteUnknown)
         }
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try png.write(to: url, options: .atomic)
+        let folder = url.deletingLastPathComponent()
+        if !FileManager.default.fileExists(atPath: folder.path) {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        do {
+            try png.write(to: url, options: .atomic)
+        } catch {
+            // Sandbox'ta kaydetme penceresiyle yalnızca dosyanın kendisine izin verilir; atomik yazma
+            // aynı klasöre geçici dosya açamayabilir. O durumda doğrudan dosyanın üzerine yazılır.
+            try png.write(to: url)
+        }
     }
 
     /// Klasörde henüz olmayan bir dosya adı. Aynı saniyede iki görüntü alınırsa sonuna (2), (3)… eklenir.

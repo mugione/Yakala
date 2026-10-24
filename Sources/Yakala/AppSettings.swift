@@ -11,13 +11,25 @@ final class AppSettings {
 
     private enum Keys {
         static let autoSave = "autoSave"
-        static let saveFolder = "saveFolder"
+        static let saveFolderBookmark = "saveFolderBookmark"
     }
 
-    /// Masaüstü, Belgeler ve İndirilenler macOS tarafından korunur ve izin ister;
-    /// Resimler klasörü istemez, bu yüzden varsayılan orası.
-    static let defaultSaveFolder = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("Yakala", isDirectory: true)
+    /// Kullanıcının gerçek ev klasörü. Sandbox'ta FileManager ve NSHomeDirectory uygulamanın
+    /// kapsayıcısını (~/Library/Containers/...) gösterdiği için kullanıcı kaydından okunur.
+    static let homeFolder: URL = {
+        let path = getpwuid(getuid()).map { String(cString: $0.pointee.pw_dir) } ?? NSHomeDirectory()
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }()
+
+    /// Masaüstü, Belgeler ve İndirilenler macOS tarafından korunur ve izin ister; Resimler klasörüne ise
+    /// Yakala'nın sandbox izni var. Bu yüzden varsayılan orası.
+    static let defaultSaveFolder = homeFolder.appendingPathComponent("Pictures/Yakala", isDirectory: true)
+
+    /// Klasör yolunu ev klasörünü "~" ile kısaltarak gösterir.
+    static func displayPath(_ url: URL) -> String {
+        let home = homeFolder.path
+        return url.path.hasPrefix(home) ? "~" + url.path.dropFirst(home.count) : url.path
+    }
 
     /// Her yakalamada görüntü kayıt klasörüne kendiliğinden kaydedilir.
     private(set) var autoSave: Bool
@@ -28,8 +40,7 @@ final class AppSettings {
     private init() {
         let defaults = UserDefaults.standard
         autoSave = defaults.bool(forKey: Keys.autoSave)
-        saveFolder = defaults.string(forKey: Keys.saveFolder)
-            .map { URL(fileURLWithPath: $0, isDirectory: true) } ?? Self.defaultSaveFolder
+        saveFolder = Self.restoreBookmarkedFolder() ?? Self.defaultSaveFolder
         refreshLaunchAtLogin()
     }
 
@@ -38,9 +49,29 @@ final class AppSettings {
         UserDefaults.standard.set(enabled, forKey: Keys.autoSave)
     }
 
+    /// Sandbox'ta kullanıcının seçtiği klasöre erişim yalnızca o oturum için verilir.
+    /// Güvenli yer imi (security-scoped bookmark) bu erişimi sonraki açılışlara taşır.
     func setSaveFolder(_ folder: URL) {
         saveFolder = folder
-        UserDefaults.standard.set(folder.path, forKey: Keys.saveFolder)
+        if folder.standardizedFileURL == Self.defaultSaveFolder.standardizedFileURL {
+            UserDefaults.standard.removeObject(forKey: Keys.saveFolderBookmark)
+        } else if let bookmark = try? folder.bookmarkData(options: .withSecurityScope) {
+            UserDefaults.standard.set(bookmark, forKey: Keys.saveFolderBookmark)
+        }
+    }
+
+    private static func restoreBookmarkedFolder() -> URL? {
+        guard let data = UserDefaults.standard.data(forKey: Keys.saveFolderBookmark) else { return nil }
+        var isStale = false
+        guard let url = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, bookmarkDataIsStale: &isStale) else {
+            return nil
+        }
+        // Erişim uygulama açık kaldığı sürece sürer; kayıt klasörü her an kullanılabileceği için bırakılmaz.
+        _ = url.startAccessingSecurityScopedResource()
+        if isStale, let fresh = try? url.bookmarkData(options: .withSecurityScope) {
+            UserDefaults.standard.set(fresh, forKey: Keys.saveFolderBookmark)
+        }
+        return url
     }
 
     // MARK: - Girişte başlatma

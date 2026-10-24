@@ -2,26 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleIdentifier</key>
-	<string>io.github.mugione.Yakala</string>
-	<key>CFBundleName</key>
-	<string>Yakala</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>tr</string>
 	<key>CFBundleDisplayName</key>
 	<string>Yakala</string>
 	<key>CFBundleExecutable</key>
 	<string>Yakala</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.mugione.Yakala</string>
+	<key>CFBundleName</key>
+	<string>Yakala</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>1.1</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>tr</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>© 2026 mugione · github.com/mugione</string>
+	<string>2</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
@@ -30,5 +28,7 @@
 	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 mugione · github.com/mugione</string>
 </dict>
 </plist>

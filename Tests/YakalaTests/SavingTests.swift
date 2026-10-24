@@ -37,6 +37,18 @@ struct SavingTests {
     }
 }
 
+/// Sandbox'ta FileManager kapsayıcıyı gösterir; varsayılan klasör gerçek ~/Pictures olmalı.
+@MainActor
+struct SaveFolderTests {
+    @Test func defaultFolderIsTheRealPicturesFolder() {
+        let folder = AppSettings.defaultSaveFolder.path
+        #expect(folder.hasSuffix("/Pictures/Yakala"))
+        #expect(!folder.contains("/Library/Containers/"))
+        #expect(AppSettings.displayPath(AppSettings.defaultSaveFolder) == "~/Pictures/Yakala")
+        #expect(AppSettings.displayPath(URL(fileURLWithPath: "/Volumes/Disk/Ekran")) == "/Volumes/Disk/Ekran")
+    }
+}
+
 private func makeTemporaryFolder() throws -> URL {
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

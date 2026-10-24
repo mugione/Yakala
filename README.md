@@ -46,7 +46,7 @@
 - 💾 **Otomatik kayıt.** İstersen her görüntü seçtiğin klasöre kendiliğinden kaydedilir.
 - ↩️ **Geri al, taşı, düzenle.** Çizdiğin her şekil sonradan seçilip taşınabilir, rengi değiştirilebilir.
 - 🖥️ **Birden fazla ekran** ve Retina çözünürlüğü desteklenir.
-- 🔒 **Gizliliğe saygılı.** Yakala internete bağlanmaz, veri toplamaz; görüntüler yalnızca senin Mac'inde kalır.
+- 🔒 **Gizliliğe saygılı.** macOS sandbox'ında, ağ izni olmadan çalışır: internete bağlanamaz, veri toplamaz; görüntüler yalnızca senin Mac'inde kalır. [Kendin doğrula ↓](#güvenlik-ve-gizlilik)
 - 🪶 **Hafif ve yerel.** Swift ile yazıldı, Dock'ta yer kaplamaz, menü çubuğunda sessizce bekler. macOS 26 ve sonrasında Liquid Glass görünümüyle.
 
 ## Kurulum
@@ -70,6 +70,41 @@
    bölümünden Yakala'yı aç. macOS "Çık ve Yeniden Aç" derse onu seç.
 
 **Gereksinim:** macOS 14 Sonoma veya üzeri.
+
+## Güvenlik ve gizlilik
+
+Yakala ekran kaydı izni istediği için neye erişip neye erişmediğini açıkça yazıyoruz. Aşağıdakilerin
+hepsini kendin doğrulayabilirsin.
+
+| | |
+|---|---|
+| 🌐 **İnternet** | **Yok.** Yakala macOS'un **App Sandbox**'ında çalışır ve ağ izni yoktur: internete bağlanmayı macOS'un kendisi engeller. |
+| 🖥️ **Ekran** | Yalnızca sen ⇧⌘2'ye bastığında ya da simgeye tıkladığında, o anki ekranı yakalamak için ([kod](Sources/Yakala/ScreenCapturer.swift)). Arka planda kayıt yapmaz. |
+| 📁 **Dosyalar** | Resimler klasörü (varsayılan kayıt yeri `~/Pictures/Yakala`) ve kaydetme / klasör seçme pencerelerinde senin seçtiğin konumlar. Masaüstü, Belgeler gibi diğer klasörlere erişemez. |
+| 📋 **Pano** | Yalnızca Kopyala'ya bastığında görüntüyü panoya yazar; panoyu okumaz. |
+| 📊 **Veri toplama** | **Yok.** Analiz, kullanım verisi ya da çökme raporu gönderilmez. |
+| 📦 **Dış kütüphane** | **Yok.** Yalnızca Apple'ın kendi çerçeveleri kullanılır; kodun tamamı bu depoda. |
+
+### Kendin doğrula
+
+**Uygulamanın izinleri.** Listede `app-sandbox` görünmeli, `network` geçen hiçbir izin olmamalı:
+
+```bash
+codesign -d --entitlements - /Applications/Yakala.app
+```
+
+**İndirdiğin DMG'nin değiştirilmediği.** Sürüm sayfasındaki `.sha256` dosyasını DMG ile aynı klasöre indir:
+
+```bash
+shasum -a 256 -c Yakala-1.1.dmg.sha256
+```
+
+`Yakala-1.1.dmg: OK` görmelisin.
+
+**Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
+
+Uygulama şu an Apple Developer ID ile imzalı değil; ilk açılıştaki uyarının nedeni bu
+([Kurulum](#kurulum)). Bir güvenlik açığı bulursan lütfen [SECURITY.md](SECURITY.md)'deki adımları izle.
 
 ## Kullanım
 
@@ -191,15 +226,18 @@ Kodu Xcode'da düzenlemek için `Package.swift` dosyasını Xcode ile aç.
 | `Sources/Yakala/AppSettings.swift` | Ayarlar ve girişte başlatma |
 | `Sources/Yakala/SettingsWindow.swift` | Ayarlar penceresi |
 | `Sources/Yakala/About.swift` | Hakkında paneli |
+| `Support/Yakala.entitlements` | Sandbox izinleri (ağ izni yok) |
 | `Support/` | `Info.plist`, uygulama simgesi ve simgeyi üreten betik |
+| `SECURITY.md` | Güvenlik politikası ve açık bildirme |
 | `Tests/YakalaTests/` | Çizim motoru, model ve kaydetme testleri |
 </details>
 
 ### Yeni sürüm yayınlamak
 
-1. `Support/Info.plist` içinde `CFBundleShortVersionString` değerini artır (ör. `1.1`).
-2. `./build.sh --dmg` çalıştır.
-3. GitHub'da **Releases › Draft a new release**: etiket `v1.1`, `build/Yakala-1.1.dmg` dosyasını ekle, yayınla.
+1. `Support/Info.plist` içinde `CFBundleShortVersionString` (ör. `1.2`) ve `CFBundleVersion` değerlerini artır.
+2. `./build.sh --dmg` çalıştır. `build/` klasöründe DMG ve yanında `.sha256` özeti oluşur.
+3. GitHub'da **Releases › Draft a new release**: etiket `v1.2`, `build/Yakala-1.2.dmg` ve
+   `build/Yakala-1.2.dmg.sha256` dosyalarını ekle, yayınla.
 
 ## Katkıda bulunma
 
@@ -224,7 +262,10 @@ It lives in the menu bar; the interface is in Turkish.
 - **Annotate:** arrow, rectangle, ellipse, pen and text; 7 colors, 3 line widths, undo/redo.
 - **Redact:** blur or pixelate sensitive information.
 - **Copy & go:** ⌘C copies the result, closes the editor and returns you to the previous app.
-- **Private:** no network access, no analytics. Your screenshots never leave your Mac.
+- **Private:** runs in the macOS App Sandbox **without any network entitlement**, no analytics, no
+  third-party dependencies. Your screenshots never leave your Mac. Verify it yourself:
+  `codesign -d --entitlements - /Applications/Yakala.app`. Each release ships a `.sha256` checksum.
+  See [SECURITY.md](SECURITY.md).
 
 **Demo:** see the animation at the top, or watch the full video with Turkish narration:
 [▶ watch](https://cdn.jsdelivr.net/gh/mugione/Yakala@main/docs/yakala-tanitim.mp4).
