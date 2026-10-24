@@ -27,11 +27,12 @@
 </p>
 
 <p align="center">
-  <a href="docs/yakala-tanitim.mp4">
+  <!-- GitHub videoyu indirilecek dosya olarak verir; jsDelivr aynı dosyayı tarayıcıda oynatılabilir şekilde sunar. -->
+  <a href="https://cdn.jsdelivr.net/gh/mugione/Yakala@main/docs/yakala-tanitim.mp4">
     <img src="docs/onizleme.gif" width="820" alt="Yakala tanıtımı: ⇧⌘2 ile alan seçimi; ok, yuvarlak ve yazıyla işaretleme; bulanıklaştırma ve panoya kopyalama">
   </a>
   <br>
-  <sub>🔊 Seslendirmeli tanıtım videosunun tamamı (52 sn): <a href="docs/yakala-tanitim.mp4">docs/yakala-tanitim.mp4</a></sub>
+  <sub>🔊 Seslendirmeli tanıtım videosunun tamamı (52 sn): <a href="https://cdn.jsdelivr.net/gh/mugione/Yakala@main/docs/yakala-tanitim.mp4"><b>▶ İzle</b></a></sub>
 </p>
 
 ---
@@ -226,7 +227,7 @@ It lives in the menu bar; the interface is in Turkish.
 - **Private:** no network access, no analytics. Your screenshots never leave your Mac.
 
 **Demo:** see the animation at the top, or watch the full video with Turkish narration:
-[docs/yakala-tanitim.mp4](docs/yakala-tanitim.mp4).
+[▶ watch](https://cdn.jsdelivr.net/gh/mugione/Yakala@main/docs/yakala-tanitim.mp4).
 
 **Install:** download the latest `.dmg` from [Releases](https://github.com/mugione/Yakala/releases/latest)
 and drag Yakala to Applications. Because the app is not signed with a paid Developer ID, macOS will block the
