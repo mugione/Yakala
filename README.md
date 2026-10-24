@@ -21,6 +21,8 @@
   &nbsp;·&nbsp;
   <a href="#kurulum">Kurulum</a>
   &nbsp;·&nbsp;
+  <a href="#güvenlik-izinleri">Güvenlik izinleri</a>
+  &nbsp;·&nbsp;
   <a href="#kullanım">Kullanım</a>
   &nbsp;·&nbsp;
   <a href="#english">English</a>
@@ -53,23 +55,66 @@
 
 1. [Son sürümü](https://github.com/mugione/Yakala/releases/latest) aç ve **`Yakala-<sürüm>.dmg`** dosyasını indir.
 2. DMG'yi aç ve **Yakala**'yı yanındaki **Uygulamalar** klasörüne sürükle.
-3. Yakala'yı Uygulamalar'dan veya Spotlight'tan aç.
-
-> [!IMPORTANT]
-> **İlk açılışta "Yakala doğrulanamadı" uyarısı görürsen:** Bu beklenen bir durum. Yakala ücretsiz ve açık kaynak
-> olduğu için ücretli Apple Developer ID ile imzalanmıyor. Açmak için:
->
-> 1. Uyarıyı **Bitti** ile kapat.
-> 2. **Sistem Ayarları › Gizlilik ve Güvenlik**'i aç, aşağı kaydır.
-> 3. "Yakala engellendi" satırındaki **Yine de Aç**'a tıkla ve onayla.
->
-> Bu işlem yalnızca bir kez yapılır. Terminal kullanmayı tercih edersen:
-> `xattr -dr com.apple.quarantine /Applications/Yakala.app`
-
-4. İlk yakalamada macOS **ekran kaydı izni** ister: **Sistem Ayarları › Gizlilik ve Güvenlik › Ekran Kaydı**
-   bölümünden Yakala'yı aç. macOS "Çık ve Yeniden Aç" derse onu seç.
+3. Yakala'yı **Uygulamalar** klasöründen aç.
+4. İlk açılışta macOS iki kez izin ister: önce uygulamayı açmak, sonra ekranı yakalamak için. İkisi de
+   **bir kerelik**; nasıl verileceği hemen aşağıda adım adım anlatılıyor: [Güvenlik izinleri](#güvenlik-izinleri).
 
 **Gereksinim:** macOS 14 Sonoma veya üzeri.
+
+## Güvenlik izinleri
+
+> [!NOTE]
+> **Bu uyarı neden çıkıyor?** Yakala ücretsiz ve açık kaynak. Apple'ın ücretli geliştirici imzasıyla
+> (Developer ID) imzalanmadığı için macOS onu tanımıyor ve ilk açılışta durduruyor. Bu, uygulamanın zararlı
+> olduğu anlamına gelmez: kodun tamamı bu depoda ve ne yapıp ne yapmadığını
+> [kendin doğrulayabilirsin](#güvenlik-ve-gizlilik).
+
+### 1. "Yakala açılamadı" uyarısı
+
+Açarken güvenlik uyarısı alırsan **Sistem Ayarları → Gizlilik ve Güvenlik** bölümüne gir:
+
+1. Uyarı penceresinde **Bitti**'ye tıkla. ⚠️ **Çöp Sepetine Taşı**'ya basma.
+2. Ekranın sol üst köşesindeki **Apple menüsünden** **Sistem Ayarları**'nı aç.
+3. Sol kenar çubuğunda **Gizlilik ve Güvenlik**'i seç.
+4. Sağ tarafta en alttaki **Güvenlik** başlığına kadar kaydır. Orada Yakala'nın engellendiğini söyleyen bir
+   satır göreceksin.
+5. O satırdaki **Yine de Aç** düğmesine tıkla.
+6. Açılan pencerede yine **Yine de Aç**'ı seç ve Mac'inin parolasını gir (ya da Touch ID kullan).
+
+Yakala açılır ve menü çubuğunda simgesi belirir. Bu işlem **yalnızca bir kez** yapılır; sonraki açılışlarda
+uyarı çıkmaz.
+
+> [!TIP]
+> - **Yine de Aç** düğmesi, Yakala'yı açmayı denedikten sonra yaklaşık **bir saat** görünür. Göremiyorsan
+>   Yakala'yı bir kez daha açmayı dene, sonra Gizlilik ve Güvenlik'e geri dön.
+> - macOS 15 ve sonrasında eskiden kullanılan "sağ tık → Aç" yöntemi artık işe yaramıyor; yukarıdaki yol
+>   doğru yöntem.
+
+<details>
+<summary><b>Terminal ile tek komutta (ileri kullanıcılar için)</b></summary>
+
+macOS'un internetten indirilen dosyalara koyduğu "karantina" işaretini kaldırır; uyarı bir daha çıkmaz:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Yakala.app
+```
+
+</details>
+
+### 2. Ekran kaydı izni
+
+Yakala'nın ekranı yakalayabilmesi için bu izin gerekli. İlk kez **⇧⌘2**'ye bastığında macOS sorar:
+
+1. Çıkan pencerede **Sistem Ayarları'nı Aç**'a tıkla. Kendin açmak istersen:
+   **Sistem Ayarları → Gizlilik ve Güvenlik → Ekran Kaydı** (macOS'un yeni sürümlerinde bu bölümün adı
+   **Ekran ve Sistem Sesi Kaydı**).
+2. Listede **Yakala**'nın yanındaki düğmeyi aç.
+3. macOS **Çık ve Yeniden Aç** derse onu seç.
+4. **⇧⌘2**'ye tekrar bas: ekran kararır ve alan seçimi başlar. 🎉
+
+> [!NOTE]
+> Yakala ekranı yalnızca sen ⇧⌘2'ye bastığında ya da simgeye tıkladığında yakalar; arka planda kayıt yapmaz ve
+> internete bağlanamaz. Ayrıntılar: [Güvenlik ve gizlilik](#güvenlik-ve-gizlilik).
 
 ## Güvenlik ve gizlilik
 
@@ -104,7 +149,7 @@ shasum -a 256 -c Yakala-1.1.dmg.sha256
 **Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
 
 Uygulama şu an Apple Developer ID ile imzalı değil; ilk açılıştaki uyarının nedeni bu
-([Kurulum](#kurulum)). Bir güvenlik açığı bulursan lütfen [SECURITY.md](SECURITY.md)'deki adımları izle.
+([Güvenlik izinleri](#güvenlik-izinleri)). Bir güvenlik açığı bulursan lütfen [SECURITY.md](SECURITY.md)'deki adımları izle.
 
 ## Kullanım
 
