@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Swift Package Manager ve Xcode derleme çıktıları
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+
+# build.sh çıktıları (Yakala.app, DMG). DMG'ler GitHub Releases'e yüklenir, depoya değil.
+build/
