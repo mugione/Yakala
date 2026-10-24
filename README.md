@@ -26,10 +26,9 @@
   <a href="#english">English</a>
 </p>
 
-<!-- Ekran görüntüsü eklemek için: Yakala ile düzenleyicinin görüntüsünü al, docs/ekran-goruntusu.png olarak kaydet
-     ve aşağıdaki satırı yorumdan çıkar.
-<p align="center"><img src="docs/ekran-goruntusu.png" width="820" alt="Yakala düzenleyicisi"></p>
--->
+<p align="center">
+  <img src="docs/ekran-goruntusu.png" width="820" alt="Yakala düzenleyicisi: üstte araçlar ve renkler, ortada yakalanan görüntü, altta Kopyala ve Kaydet">
+</p>
 
 ---
 
