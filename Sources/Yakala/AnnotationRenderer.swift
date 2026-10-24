@@ -25,7 +25,7 @@ final class AnnotationRenderer {
         // Önce gizleme bölgeleri, sonra vurgular, en üstte diğer şekiller (Annotation.drawLayer).
         for layer in 0...2 {
             for annotation in annotations where annotation.drawLayer == layer {
-                draw(annotation, in: context)
+                draw(annotation, among: annotations, in: context)
             }
         }
     }
@@ -58,7 +58,8 @@ final class AnnotationRenderer {
 
     // MARK: - Şekiller
 
-    private func draw(_ annotation: Annotation, in context: CGContext) {
+    /// `annotations`: tüm şekiller; büyüteç altındaki gizleme bölgelerini de büyütebilsin diye.
+    private func draw(_ annotation: Annotation, among annotations: [Annotation], in context: CGContext) {
         context.saveGState()
         defer { context.restoreGState() }
 
@@ -87,10 +88,21 @@ final class AnnotationRenderer {
             context.beginTransparencyLayer(auxiliaryInfo: nil)
             drawStroke(through: points, lineWidth: annotation.highlightWidth, in: context)
             context.endTransparencyLayer()
+        case let .text(string, origin) where annotation.hasBackground:
+            // Etiket: yuvarlak köşeli renkli kutu, içinde okunur renkte yazı.
+            let box = annotation.bounds
+            let radius = min(annotation.fontSize * 0.35, box.height / 2)
+            context.addPath(CGPath(roundedRect: box, cornerWidth: radius, cornerHeight: radius, transform: nil))
+            context.fillPath()
+            drawText(string, at: origin, attributes: annotation.labelAttributes, in: context)
         case let .text(string, origin):
             drawText(string, at: origin, attributes: annotation.textAttributes, in: context)
         case let .counter(number, center):
-            drawCounter(number, at: center, annotation: annotation, in: context)
+            drawBadge("\(number)", at: center, annotation: annotation, in: context)
+        case let .stamp(kind, center):
+            drawBadge(kind.glyph, at: center, annotation: annotation, in: context)
+        case let .magnifier(center, radius):
+            drawMagnifier(at: center, radius: radius, annotation: annotation, among: annotations, in: context)
         case let .blur(rect):
             context.clip(to: rect)
             drawImage(blurred, in: CGRect(origin: .zero, size: capture.pointSize), context: context)
@@ -124,8 +136,38 @@ final class AnnotationRenderer {
         context.fillPath()
     }
 
-    /// İçinde numara olan dolu daire; ince beyaz kenarı koyu arka planlarda da daireyi ayırır.
-    private func drawCounter(_ number: Int, at center: CGPoint, annotation: Annotation, in context: CGContext) {
+    /// Altındaki görüntüyü iki kat büyüterek gösteren yuvarlak mercek.
+    /// Gizleme bölgeleri ve vurgular da büyütülür; büyüteç bulanıklaştırılmış bilgiyi açığa çıkarmaz.
+    private func drawMagnifier(at center: CGPoint, radius: CGFloat, annotation: Annotation,
+                               among annotations: [Annotation], in context: CGContext) {
+        let circle = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+
+        context.saveGState()
+        context.setShadow(offset: .zero, blur: radius * 0.25, color: NSColor.black.withAlphaComponent(0.35).cgColor)
+        context.setFillColor(NSColor.white.cgColor)
+        context.fillEllipse(in: circle)
+        context.restoreGState()
+
+        context.saveGState()
+        context.addEllipse(in: circle)
+        context.clip()
+        context.translateBy(x: center.x, y: center.y)
+        context.scaleBy(x: 2, y: 2)
+        context.translateBy(x: -center.x, y: -center.y)
+        drawImage(capture.image, in: CGRect(origin: .zero, size: capture.pointSize), context: context)
+        for underlying in annotations where underlying.drawLayer < 2 {
+            draw(underlying, among: annotations, in: context)
+        }
+        context.restoreGState()
+
+        let border = max(3, annotation.lineWidth.value)
+        context.setStrokeColor(annotation.color.nsColor.cgColor)
+        context.setLineWidth(border)
+        context.strokeEllipse(in: circle)
+    }
+
+    /// İçinde numara ya da işaret olan dolu daire; ince beyaz kenarı koyu arka planlarda da daireyi ayırır.
+    private func drawBadge(_ label: String, at center: CGPoint, annotation: Annotation, in context: CGContext) {
         let radius = annotation.counterRadius
         let circle = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
         context.fillEllipse(in: circle)
@@ -136,7 +178,7 @@ final class AnnotationRenderer {
 
         // Rakamlar taban çizgisinin üstünde durur; büyük harf yüksekliğine göre dikeyde ortalanır.
         let attributes = annotation.counterAttributes
-        let text = NSAttributedString(string: "\(number)", attributes: attributes)
+        let text = NSAttributedString(string: label, attributes: attributes)
         let font = attributes[.font] as? NSFont ?? .systemFont(ofSize: radius)
         let origin = CGPoint(x: center.x - text.size().width / 2, y: center.y + font.capHeight / 2 - font.ascender)
         drawText(text.string, at: origin, attributes: attributes, in: context)

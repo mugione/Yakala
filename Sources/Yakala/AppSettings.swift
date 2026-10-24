@@ -12,6 +12,28 @@ final class AppSettings {
     private enum Keys {
         static let autoSave = "autoSave"
         static let saveFolderBookmark = "saveFolderBookmark"
+        static let afterCapture = "afterCapture"
+        static let areaShortcut = "areaShortcut"
+        static let windowShortcut = "windowShortcut"
+    }
+
+    /// Yakalamadan hemen sonra ne olacağı. Kopyala ve Kaydet "hızlı mod"dur: düzenleyici açılmaz.
+    enum AfterCapture: String, CaseIterable, Identifiable {
+        case editor, copy, save
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .editor: "Düzenleyiciyi aç"
+            case .copy: "Hemen panoya kopyala"
+            case .save: "Hemen kayıt klasörüne kaydet"
+            }
+        }
+    }
+
+    enum ShortcutAction {
+        case area, window
     }
 
     /// Kullanıcının gerçek ev klasörü. Sandbox'ta FileManager ve NSHomeDirectory uygulamanın
@@ -36,13 +58,78 @@ final class AppSettings {
     private(set) var saveFolder: URL
     private(set) var launchAtLoginStatus: SMAppService.Status = .notRegistered
     private(set) var launchAtLoginError: String?
+    private(set) var afterCapture: AfterCapture
+    private(set) var areaShortcut: Shortcut
+    private(set) var windowShortcut: Shortcut
+    /// Ayarlarda yeni kısayol kaydedilirken global kısayollar geçici olarak kapatılır.
+    private(set) var isRecordingShortcut = false
+    /// Kaydedilemeyen kısayolların açıklaması (başka bir uygulama kullanıyorsa).
+    private(set) var shortcutError: String?
+    /// Kısayollar değişince ya da kayıt başlayıp bitince çağrılır; AppDelegate kısayolları yeniden kaydeder.
+    @ObservationIgnored var onHotKeysChanged: (() -> Void)?
 
     private init() {
         let defaults = UserDefaults.standard
         autoSave = defaults.bool(forKey: Keys.autoSave)
+        afterCapture = defaults.string(forKey: Keys.afterCapture).flatMap(AfterCapture.init(rawValue:)) ?? .editor
+        areaShortcut = Self.loadShortcut(Keys.areaShortcut) ?? .defaultArea
+        windowShortcut = Self.loadShortcut(Keys.windowShortcut) ?? .defaultWindow
         saveFolder = Self.restoreBookmarkedFolder() ?? Self.defaultSaveFolder
         refreshLaunchAtLogin()
     }
+
+    func setAfterCapture(_ value: AfterCapture) {
+        afterCapture = value
+        UserDefaults.standard.set(value.rawValue, forKey: Keys.afterCapture)
+    }
+
+    // MARK: - Kısayollar
+
+    /// İki işleme aynı kısayol verilemez; o durumda değişiklik yapılmaz ve hata gösterilir.
+    func setShortcut(_ shortcut: Shortcut, for action: ShortcutAction) {
+        let other = action == .area ? windowShortcut : areaShortcut
+        guard shortcut.keyCode != other.keyCode || shortcut.modifiers != other.modifiers else {
+            shortcutError = "\(shortcut.display) zaten diğer işlem için kullanılıyor."
+            return
+        }
+        switch action {
+        case .area: areaShortcut = shortcut
+        case .window: windowShortcut = shortcut
+        }
+        Self.saveShortcut(shortcut, action == .area ? Keys.areaShortcut : Keys.windowShortcut)
+        onHotKeysChanged?()
+    }
+
+    func resetShortcuts() {
+        areaShortcut = .defaultArea
+        windowShortcut = .defaultWindow
+        UserDefaults.standard.removeObject(forKey: Keys.areaShortcut)
+        UserDefaults.standard.removeObject(forKey: Keys.windowShortcut)
+        onHotKeysChanged?()
+    }
+
+    func setRecordingShortcut(_ recording: Bool) {
+        isRecordingShortcut = recording
+        if recording { shortcutError = nil }
+        onHotKeysChanged?()
+    }
+
+    /// AppDelegate kısayolları kaydettikten sonra başarısız olanları bildirir.
+    func reportFailedShortcuts(_ failed: [Shortcut]) {
+        shortcutError = failed.isEmpty
+            ? nil
+            : failed.map(\.display).joined(separator: ", ") + " kaydedilemedi; başka bir uygulama kullanıyor olabilir."
+    }
+
+    private static func loadShortcut(_ key: String) -> Shortcut? {
+        UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(Shortcut.self, from: $0) }
+    }
+
+    private static func saveShortcut(_ shortcut: Shortcut, _ key: String) {
+        UserDefaults.standard.set(try? JSONEncoder().encode(shortcut), forKey: key)
+    }
+
+    // MARK: - Kayıt
 
     func setAutoSave(_ enabled: Bool) {
         autoSave = enabled

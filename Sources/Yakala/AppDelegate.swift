@@ -26,24 +26,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let icon = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Yakala")
             icon?.isTemplate = true
             button.image = icon
-            button.toolTip = "Tıkla veya ⇧⌘2: alan seç\n⇧⌘1: pencere seç\nSağ tık: menü"
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
-        hotKey = GlobalHotKey(keyCode: kVK_ANSI_2, modifiers: cmdKey | shiftKey) { [weak self] in
-            self?.startCapture(.area, delay: .zero)
+        AppSettings.shared.onHotKeysChanged = { [weak self] in self?.registerHotKeys() }
+        registerHotKeys()
+    }
+
+    /// Ayarlardaki kısayolları kaydeder. Ayarlarda yeni kısayol kaydedilirken hiçbirini kaydetmez;
+    /// yoksa basılan tuşlar yakalamayı başlatırdı.
+    private func registerHotKeys() {
+        hotKey?.unregister()
+        windowHotKey?.unregister()
+        hotKey = nil
+        windowHotKey = nil
+
+        let settings = AppSettings.shared
+        statusItem.button?.toolTip = "Tıkla veya \(settings.areaShortcut.display): alan seç\n"
+            + "\(settings.windowShortcut.display): pencere seç\nSağ tık: menü"
+        guard !settings.isRecordingShortcut else { return }
+
+        hotKey = GlobalHotKey(keyCode: settings.areaShortcut.keyCode, modifiers: settings.areaShortcut.modifiers) {
+            [weak self] in self?.startCapture(.area, delay: .zero)
         }
-        if hotKey == nil {
-            NSLog("Yakala: ⇧⌘2 kısayolu kaydedilemedi, başka bir uygulama kullanıyor olabilir.")
+        windowHotKey = GlobalHotKey(keyCode: settings.windowShortcut.keyCode, modifiers: settings.windowShortcut.modifiers) {
+            [weak self] in self?.startCapture(.window, delay: .zero)
         }
-        windowHotKey = GlobalHotKey(keyCode: kVK_ANSI_1, modifiers: cmdKey | shiftKey) { [weak self] in
-            self?.startCapture(.window, delay: .zero)
-        }
-        if windowHotKey == nil {
-            NSLog("Yakala: ⇧⌘1 kısayolu kaydedilemedi, başka bir uygulama kullanıyor olabilir.")
-        }
+        var failed: [Shortcut] = []
+        if hotKey == nil { failed.append(settings.areaShortcut) }
+        if windowHotKey == nil { failed.append(settings.windowShortcut) }
+        settings.reportFailedShortcuts(failed)
     }
 
     /// Yakala çalışırken yeniden açılırsa (Finder, Spotlight, `open`) ayarlar penceresi gelir.
@@ -70,12 +84,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.autoenablesItems = false
         let hasCapture = editorController != nil
 
+        let settings = AppSettings.shared
         let areaItem = addItem(to: menu, title: "Alan Seç", action: #selector(captureArea))
-        areaItem.keyEquivalent = "2"
-        areaItem.keyEquivalentModifierMask = [.command, .shift]
+        areaItem.keyEquivalent = settings.areaShortcut.menuKeyEquivalent
+        areaItem.keyEquivalentModifierMask = settings.areaShortcut.menuModifierMask
         let windowItem = addItem(to: menu, title: "Pencere Seç", action: #selector(captureWindow))
-        windowItem.keyEquivalent = "1"
-        windowItem.keyEquivalentModifierMask = [.command, .shift]
+        windowItem.keyEquivalent = settings.windowShortcut.menuKeyEquivalent
+        windowItem.keyEquivalentModifierMask = settings.windowShortcut.menuModifierMask
         addItem(to: menu, title: "Tüm Ekranı Al", action: #selector(captureFullScreen))
         menu.addItem(.separator())
         addItem(to: menu, title: "Son Görüntüyü Göster", action: #selector(showLastCapture), enabled: hasCapture)
@@ -144,7 +159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     capture = try await ScreenCapturer.captureScreenUnderMouse()
                 }
                 guard let capture else { return } // Esc ile vazgeçildi
-                showEditor(for: capture, returningTo: previousApp)
+                handle(capture, returningTo: previousApp)
             } catch {
                 presentError(error)
             }
@@ -163,7 +178,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         editorController?.saveAndClose()
     }
 
-    private func showEditor(for capture: Capture, returningTo previousApp: NSRunningApplication?) {
+    /// Yakalanan görüntüyü ayara göre düzenleyicide açar ya da hızlı modda hemen kopyalar / kaydeder.
+    /// Hızlı modda da düzenleyici hazırlanır; menüdeki "Son Görüntüyü Göster" ile sonradan açılabilir.
+    private func handle(_ capture: Capture, returningTo previousApp: NSRunningApplication?) {
         // Eski pencere kapanırken önceki uygulamaya dönmesin; yeni pencere hemen açılacak.
         editorController?.previousApp = nil
         editorController?.close()
@@ -172,19 +189,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         editorController = controller
 
         let settings = AppSettings.shared
-        var autoSaveError: Error?
-        if settings.autoSave {
+        var saveError: Error?
+        if settings.autoSave || settings.afterCapture == .save {
             do {
                 try controller.model.autoSave(to: settings.saveFolder)
             } catch {
-                autoSaveError = error
+                saveError = error
             }
         }
 
-        controller.present()
-        if let autoSaveError {
-            let alert = NSAlert(error: autoSaveError)
-            alert.messageText = "Otomatik kayıt yapılamadı"
+        switch settings.afterCapture {
+        case .editor:
+            controller.present()
+        case .copy:
+            controller.model.copy()
+            previousApp?.activate()
+            Toast.show("Panoya kopyalandı")
+        case .save:
+            previousApp?.activate()
+            if saveError == nil {
+                Toast.show("Kaydedildi")
+            }
+        }
+
+        if let saveError {
+            let alert = NSAlert(error: saveError)
+            alert.messageText = "Kaydedilemedi"
             alert.runModal()
         }
     }

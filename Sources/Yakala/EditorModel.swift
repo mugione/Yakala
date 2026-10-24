@@ -20,6 +20,8 @@ final class EditorModel {
     private(set) var tool: Tool = .arrow
     private(set) var color: AnnotationColor = .red
     private(set) var lineWidth: LineWidth = .medium
+    /// Damga aracının koyacağı işaret.
+    private(set) var stampKind: StampKind = .check
     /// Görüntünün kaydedildiği dosya. Bir kez kaydedildikten sonra Kaydet (⌘S) bu dosyayı günceller.
     private(set) var savedURL: URL?
 
@@ -70,6 +72,13 @@ final class EditorModel {
         updateSelected { $0.color = color }
     }
 
+    /// Damga türünü seçer, damga aracına geçer ve rengi işarete uygun renge çevirir (✓ yeşil, ✗ kırmızı…).
+    func setStampKind(_ kind: StampKind) {
+        stampKind = kind
+        selectTool(.stamp)
+        setColor(kind.defaultColor)
+    }
+
     func setLineWidth(_ lineWidth: LineWidth) {
         self.lineWidth = lineWidth
         updateSelected { $0.lineWidth = lineWidth }
@@ -101,7 +110,8 @@ final class EditorModel {
     }
 
     /// Metin kutusu kapanınca çağrılır. Boş metin, düzenlenen şekli siler.
-    func commitText(_ string: String, at origin: CGPoint, editing id: Annotation.ID?) {
+    /// `background`: yeni metin etiket (arka planlı) olarak mı eklensin.
+    func commitText(_ string: String, at origin: CGPoint, editing id: Annotation.ID?, background: Bool = false) {
         defer { editingTextID = nil }
         let isEmpty = string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
@@ -117,7 +127,8 @@ final class EditorModel {
                 annotations[index] = updated
             }
         } else if !isEmpty {
-            add(Annotation(shape: .text(string, origin: origin), color: color, lineWidth: lineWidth))
+            add(Annotation(shape: .text(string, origin: origin), color: color, lineWidth: lineWidth,
+                           hasBackground: background))
         }
     }
 

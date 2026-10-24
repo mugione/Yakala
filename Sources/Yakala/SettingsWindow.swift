@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import ServiceManagement
 import SwiftUI
 
@@ -25,6 +26,54 @@ final class SettingsWindowController: NSWindowController {
         NSApp.activate()
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
+    }
+}
+
+/// Tıklanınca bir sonraki tuş bileşimini yeni kısayol olarak kaydeden düğme.
+private struct ShortcutRecorder: View {
+    let shortcut: Shortcut
+    let onRecord: (Shortcut) -> Void
+
+    @State private var isRecording = false
+    @State private var monitor: Any?
+
+    var body: some View {
+        Button {
+            isRecording ? stop() : start()
+        } label: {
+            Text(isRecording ? "Yeni kısayola bas…" : shortcut.display)
+                .monospaced()
+                .frame(minWidth: 130)
+        }
+        .onDisappear(perform: stop)
+    }
+
+    private func start() {
+        isRecording = true
+        AppSettings.shared.setRecordingShortcut(true)
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            MainActor.assumeIsolated {
+                if Int(event.keyCode) == kVK_Escape {
+                    stop()
+                } else if let shortcut = Shortcut(event: event) {
+                    onRecord(shortcut)
+                    stop()
+                } else {
+                    NSSound.beep()
+                }
+            }
+            return nil
+        }
+    }
+
+    private func stop() {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        monitor = nil
+        guard isRecording else { return }
+        isRecording = false
+        AppSettings.shared.setRecordingShortcut(false)
     }
 }
 
@@ -58,6 +107,54 @@ private struct SettingsView: View {
             }
             .padding(.bottom, 12)
 
+            LabeledContent("Yakaladıktan sonra:") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Picker("Yakaladıktan sonra", selection: Binding(
+                        get: { settings.afterCapture },
+                        set: { settings.setAfterCapture($0) }
+                    )) {
+                        ForEach(AppSettings.AfterCapture.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                    Text("Hızlı mod: kopyala ya da kaydet seçiliyse düzenleyici açılmaz. Son görüntüyü yine de menüden açıp düzenleyebilirsin.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.bottom, 12)
+
+            LabeledContent("Kısayollar:") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Alan seç").frame(width: 90, alignment: .leading)
+                        ShortcutRecorder(shortcut: settings.areaShortcut) { settings.setShortcut($0, for: .area) }
+                    }
+                    HStack {
+                        Text("Pencere seç").frame(width: 90, alignment: .leading)
+                        ShortcutRecorder(shortcut: settings.windowShortcut) { settings.setShortcut($0, for: .window) }
+                    }
+                    if let error = settings.shortcutError {
+                        Text(error)
+                            .font(.callout)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Değiştirmek için kısayola tıkla ve yeni tuşlara bas; en az bir ⌘, ⌥ ya da ⌃ içermeli. Vazgeçmek için Esc.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Varsayılan") { settings.resetShortcuts() }
+                            .help("⇧⌘2 ve ⇧⌘1'e dön")
+                    }
+                }
+            }
+            .padding(.bottom, 12)
+
             LabeledContent("Kayıt klasörü:") {
                 VStack(alignment: .leading, spacing: 8) {
                     Label(displayPath(settings.saveFolder), systemImage: "folder")
@@ -86,7 +183,7 @@ private struct SettingsView: View {
 
             LabeledContent("Menü çubuğu:") {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("⇧⌘2 ile alan seç: simge görünmese de çalışır.")
+                    Text("\(settings.areaShortcut.display) ile alan seç: simge görünmese de çalışır.")
                     Text("""
                         Simge görünmüyorsa menü çubuğu dolu olabilir; çentikli MacBook'larda soldaki simgeler \
                         çentiğin arkasında kalır. ⌘ tuşunu basılı tutarak başka simgeleri menü çubuğunun dışına \

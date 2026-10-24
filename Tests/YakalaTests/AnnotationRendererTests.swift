@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import Testing
 @testable import Yakala
 
@@ -173,6 +174,78 @@ struct AnnotationRendererTests {
         #expect(Pixels(output.image)[50, 50].a == 255)
     }
 
+    @Test func labelIsAColoredBoxWithReadableText() throws {
+        let capture = makeStripedCapture(fill: .white)
+        let label = Annotation(shape: .text("Not", origin: CGPoint(x: 60, y: 40)), color: .red, lineWidth: .thick,
+                               hasBackground: true)
+        let pixels = Pixels(try #require(AnnotationRenderer(capture: capture).renderFlattened([label])).image)
+
+        // Kutunun metnin solundaki boşluğu kırmızı; kutunun dışı beyaz.
+        #expect(pixels[2 * 56, 2 * 50].isRed)
+        #expect(!pixels[2 * 40, 2 * 50].isRed)
+        // Metin kırmızı kutunun içinde beyazla yazılır.
+        let box = label.bounds
+        let row = Int(box.midY * 2)
+        let whiteInside = (Int(box.minX * 2) + 10..<Int(box.maxX * 2) - 10).contains { x in
+            let pixel = pixels[x, row]
+            return pixel.r > 220 && pixel.g > 220 && pixel.b > 220
+        }
+        #expect(whiteInside)
+    }
+
+    @Test func magnifierEnlargesTheImage() throws {
+        let capture = makeStripedCapture()
+        let magnifier = Annotation(shape: .magnifier(center: CGPoint(x: 100, y: 50), radius: 30),
+                                   color: .blue, lineWidth: .medium)
+        let pixels = Pixels(try #require(AnnotationRenderer(capture: capture).renderFlattened([magnifier])).image)
+        // (110, 50) noktası normalde beyaz şeritte (220 px); 2 kat büyütmede (105, 50)'deki siyah şerit görünür.
+        #expect(Pixels(capture.image)[220, 100].r > 200)
+        #expect(pixels[220, 100].r < 40)
+    }
+
+    @Test func magnifierDoesNotRevealBlurredContent() throws {
+        let capture = makeStripedCapture()
+        let blur = Annotation(shape: .blur(CGRect(x: 60, y: 10, width: 80, height: 80)), color: .red, lineWidth: .medium)
+        let magnifier = Annotation(shape: .magnifier(center: CGPoint(x: 100, y: 50), radius: 30),
+                                   color: .blue, lineWidth: .medium)
+        let pixels = Pixels(try #require(AnnotationRenderer(capture: capture).renderFlattened([blur, magnifier])).image)
+        // Büyütülen bölge de bulanık: şeritlerin keskin siyahı ya da beyazı görünmez.
+        #expect((50...205).contains(pixels[220, 100].r))
+        #expect((50...205).contains(pixels[200, 100].r))
+    }
+
+    @Test func stampShowsItsMarkInAColoredCircle() throws {
+        let capture = makeStripedCapture(fill: .white)
+        let stamp = Annotation(shape: .stamp(.check, center: CGPoint(x: 100, y: 50)), color: .green, lineWidth: .thick)
+        let pixels = Pixels(try #require(AnnotationRenderer(capture: capture).renderFlattened([stamp])).image)
+
+        let edge = pixels[2 * 77, 100] // yarıçap 27: dairenin sol kenarına yakın
+        #expect(edge.g > 150 && edge.r < 100)
+        let centerRow = (2 * 88..<2 * 112).map { pixels[$0, 100] }
+        #expect(centerRow.contains { $0.r > 220 && $0.g > 220 && $0.b > 220 }) // beyaz ✓
+    }
+
+    @Test func shortcutIsReadFromAKeyPress() throws {
+        func press(_ keyCode: Int, _ flags: NSEvent.ModifierFlags, _ characters: String) -> NSEvent? {
+            NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags, timestamp: 0, windowNumber: 0,
+                             context: nil, characters: characters, charactersIgnoringModifiers: characters,
+                             isARepeat: false, keyCode: UInt16(keyCode))
+        }
+        let areaPress = try #require(press(kVK_ANSI_2, [.command, .shift], "2"))
+        let area = try #require(Shortcut(event: areaPress))
+        #expect(area == Shortcut.defaultArea)
+        #expect(area.display == "⇧⌘2")
+
+        let spacePress = try #require(press(kVK_Space, [.control, .option], " "))
+        let space = try #require(Shortcut(event: spacePress))
+        #expect(space.display == "⌃⌥Boşluk")
+        #expect(space.menuKeyEquivalent.isEmpty)
+
+        // Yalnızca Shift ile kısayol olmaz: her yerde yazı yazmayı engellerdi.
+        let shiftOnly = try #require(press(kVK_ANSI_A, [.shift], "A"))
+        #expect(Shortcut(event: shiftOnly) == nil)
+    }
+
     @Test func writesSampleForVisualCheck() throws {
         guard let path = ProcessInfo.processInfo.environment["YAKALA_SAMPLE_PNG"] else { return }
         let capture = makeStripedCapture()
@@ -188,6 +261,11 @@ struct AnnotationRendererTests {
             Annotation(shape: .highlight([CGPoint(x: 15, y: 92), CGPoint(x: 95, y: 92)]), color: .yellow, lineWidth: .medium),
             Annotation(shape: .counter(1, center: CGPoint(x: 100, y: 30)), color: .red, lineWidth: .medium),
             Annotation(shape: .counter(2, center: CGPoint(x: 180, y: 92)), color: .yellow, lineWidth: .thin),
+            Annotation(shape: .text("Etiket", origin: CGPoint(x: 140, y: 52)), color: .blue, lineWidth: .thin,
+                       hasBackground: true),
+            Annotation(shape: .stamp(.check, center: CGPoint(x: 20, y: 70)), color: .green, lineWidth: .thin),
+            Annotation(shape: .stamp(.cross, center: CGPoint(x: 50, y: 70)), color: .red, lineWidth: .thin),
+            Annotation(shape: .magnifier(center: CGPoint(x: 60, y: 30), radius: 22), color: .blue, lineWidth: .thin),
         ]
         let output = try #require(AnnotationRenderer(capture: capture).renderFlattened(annotations))
         let png = try #require(NSBitmapImageRep(cgImage: output.image).representation(using: .png, properties: [:]))

@@ -43,9 +43,11 @@
 
 - ⚡ **Tek kısayolla yakala.** **⇧⌘2**'ye bas, ekran donar; fareyle alanı seç. Tek tık tüm ekranı alır.
 - 🪟 **Pencere yakala.** **⇧⌘1**'e bas ve bir pencereye tıkla; köşeleri saydam, tam o pencere alınır.
-- ✏️ **İşaretle.** Ok, dikdörtgen, yuvarlak, kalem, vurgulayıcı, metin ve numaralı adımlar (①②③); 7 renk, 3 kalınlık.
+- ✏️ **İşaretle.** Ok, dikdörtgen, yuvarlak, kalem, vurgulayıcı, metin, etiket, numaralı adımlar (①②③), damgalar (✓ ✗ ? !) ve büyüteç; 7 renk, 3 kalınlık.
 - 🙈 **Gizle.** Şifreleri, e-postaları, kişisel bilgileri bulanıklaştır ya da pikselleştir.
 - 📋 **Kopyala ya da kaydet, devam et.** ⌘C ya da ⌘S'den sonra pencere kapanır ve çalıştığın uygulamaya dönersin: hemen ⌘V.
+- ⚡ **Hızlı mod.** İstersen düzenleyici hiç açılmaz: görüntü yakalandığı anda panoya kopyalanır ya da kaydedilir.
+- ⌨️ **Kendi kısayolların.** ⇧⌘2 ve ⇧⌘1 yerine istediğin tuşları Ayarlar'dan seçebilirsin.
 - 💾 **Otomatik kayıt.** İstersen her görüntü seçtiğin klasöre kendiliğinden kaydedilir.
 - ↩️ **Geri al, taşı, düzenle.** Çizdiğin her şekil sonradan seçilip taşınabilir, rengi değiştirilebilir.
 - 🖥️ **Birden fazla ekran** ve Retina çözünürlüğü desteklenir.
@@ -142,10 +144,10 @@ codesign -d --entitlements - /Applications/Yakala.app
 **İndirdiğin DMG'nin değiştirilmediği.** Sürüm sayfasındaki `.sha256` dosyasını DMG ile aynı klasöre indir:
 
 ```bash
-shasum -a 256 -c Yakala-1.2.dmg.sha256
+shasum -a 256 -c Yakala-1.3.dmg.sha256
 ```
 
-`Yakala-1.2.dmg: OK` görmelisin.
+`Yakala-1.3.dmg: OK` görmelisin.
 
 **Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
 
@@ -182,7 +184,10 @@ Yakala menü çubuğunda bir simge olarak çalışır; Dock'ta görünmez.
 | Kalem | `P` | Serbest çizim, otomatik yumuşatılır |
 | Vurgulayıcı | `H` | Yarı saydam fosforlu kalem; yazılar okunur kalır. Shift: düz çizgi |
 | Metin | `T` | Tıkla ve yaz; Enter kaydeder. Var olan yazıya tıklayınca düzenlersin |
+| Etiket | `L` | Renkli bir kutunun içinde yazı; karmaşık ekranlarda da okunur |
 | Numara | `N` | Her tıklamada sıradaki numarayı koyar (①②③); bırakmadan sürükleyerek yerleştir |
+| Damga | `D` | ✓ ✗ ? ! işaretleri; düğmenin yanındaki küçük oktan türünü seç (renk de kendiliğinden ayarlanır) |
+| Büyüteç | `M` | Merkezi tıkla ve sürükle: o bölge yuvarlak bir mercekte 2 kat büyür. Bulanıklaştırılan bilgiyi açığa çıkarmaz |
 | Bulanıklaştır | `B` | Gizlenecek alanı sürükle |
 | Pikselleştir | `X` | Yazıları gizlemek için bulanıklaştırmadan daha güvenli |
 
@@ -193,6 +198,8 @@ Renk ya da kalınlık seçtiğinde bir şekil seçiliyse o şekil de değişir.
 Simgeye sağ tık › **Ayarlar…** (⌘,):
 
 - **Mac açılınca Yakala'yı başlat**
+- **Yakaladıktan sonra** (hızlı mod): düzenleyiciyi aç, hemen panoya kopyala ya da hemen kayıt klasörüne kaydet
+- **Kısayollar**: alan ve pencere seçiminin kısayollarını değiştir (kısayola tıkla, yeni tuşlara bas)
 - **Kayıt klasörü**: varsayılan `~/Pictures/Yakala`
 - **Her ekran görüntüsünü otomatik kaydet**
 
@@ -308,7 +315,8 @@ Büyük bir değişiklik düşünüyorsan önce bir issue açıp konuşalım.
 It lives in the menu bar; the interface is in Turkish.
 
 - **Capture:** press **⇧⌘2**, drag to select an area (single click for the whole screen), or **⇧⌘1** and click a window.
-- **Annotate:** arrow, rectangle, ellipse, pen, highlighter, text and numbered steps; 7 colors, 3 line widths, undo/redo.
+- **Annotate:** arrow, rectangle, ellipse, pen, highlighter, text, labels, numbered steps, stamps and a magnifier; 7 colors, 3 line widths, undo/redo.
+- **Quick mode & custom shortcuts:** skip the editor and copy or save instantly; change the shortcuts in Settings.
 - **Redact:** blur or pixelate sensitive information.
 - **Copy & go:** ⌘C copies (⌘S saves) the result, closes the editor and returns you to the previous app.
 - **Private:** runs in the macOS App Sandbox **without any network entitlement**, no analytics, no

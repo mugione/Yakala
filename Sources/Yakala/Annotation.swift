@@ -2,7 +2,7 @@ import AppKit
 
 /// Düzenleyicideki araçlar.
 enum Tool: CaseIterable, Identifiable {
-    case select, arrow, rectangle, ellipse, pen, highlighter, text, counter, blur, pixelate
+    case select, arrow, rectangle, ellipse, pen, highlighter, text, label, counter, stamp, magnifier, blur, pixelate
 
     var id: Self { self }
 
@@ -15,7 +15,10 @@ enum Tool: CaseIterable, Identifiable {
         case .pen: "Kalem"
         case .highlighter: "Vurgulayıcı"
         case .text: "Metin"
+        case .label: "Etiket (arka planlı metin)"
         case .counter: "Numara"
+        case .stamp: "Damga"
+        case .magnifier: "Büyüteç"
         case .blur: "Bulanıklaştır"
         case .pixelate: "Pikselleştir"
         }
@@ -30,7 +33,10 @@ enum Tool: CaseIterable, Identifiable {
         case .pen: "pencil.tip"
         case .highlighter: "highlighter"
         case .text: "textformat"
+        case .label: "character.textbox"
         case .counter: "1.circle"
+        case .stamp: "checkmark.seal"
+        case .magnifier: "plus.magnifyingglass"
         case .blur: "drop.halffull"
         case .pixelate: "square.grid.3x3.fill"
         }
@@ -46,7 +52,10 @@ enum Tool: CaseIterable, Identifiable {
         case .pen: "p"
         case .highlighter: "h"
         case .text: "t"
+        case .label: "l"
         case .counter: "n"
+        case .stamp: "d"
+        case .magnifier: "m"
         case .blur: "b"
         case .pixelate: "x"
         }
@@ -93,6 +102,40 @@ enum AnnotationColor: CaseIterable, Identifiable {
     }
 }
 
+/// Damga aracının işaretleri. Seçildiğinde rengi de kendine uygun renge geçer.
+enum StampKind: CaseIterable, Identifiable {
+    case check, cross, question, exclamation
+
+    var id: Self { self }
+
+    var glyph: String {
+        switch self {
+        case .check: "✓"
+        case .cross: "✗"
+        case .question: "?"
+        case .exclamation: "!"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .check: "Doğru"
+        case .cross: "Yanlış"
+        case .question: "Soru"
+        case .exclamation: "Dikkat"
+        }
+    }
+
+    var defaultColor: AnnotationColor {
+        switch self {
+        case .check: .green
+        case .cross: .red
+        case .question: .orange
+        case .exclamation: .yellow
+        }
+    }
+}
+
 enum LineWidth: CaseIterable, Identifiable {
     case thin, medium, thick
 
@@ -130,6 +173,10 @@ struct Annotation: Identifiable, Equatable {
         case text(String, origin: CGPoint)
         /// İçinde sıra numarası olan dolu daire (adım adım anlatım için).
         case counter(Int, center: CGPoint)
+        /// ✓ ✗ ? ! gibi hazır işaret.
+        case stamp(StampKind, center: CGPoint)
+        /// Görüntünün bir kısmını iki kat büyüterek gösteren yuvarlak mercek.
+        case magnifier(center: CGPoint, radius: CGFloat)
         case blur(CGRect)
         case pixelate(CGRect)
     }
@@ -138,12 +185,15 @@ struct Annotation: Identifiable, Equatable {
     var shape: Shape
     var color: AnnotationColor
     var lineWidth: LineWidth
+    /// Metin renkli bir etiket kutusunun içinde mi (etiket aracı)?
+    var hasBackground: Bool
 
-    init(shape: Shape, color: AnnotationColor, lineWidth: LineWidth) {
+    init(shape: Shape, color: AnnotationColor, lineWidth: LineWidth, hasBackground: Bool = false) {
         id = UUID()
         self.shape = shape
         self.color = color
         self.lineWidth = lineWidth
+        self.hasBackground = hasBackground
     }
 
     var isRedaction: Bool {
@@ -171,7 +221,8 @@ struct Annotation: Identifiable, Equatable {
             rect.width < 3 || rect.height < 3
         case let .pen(points), let .highlight(points): points.isEmpty
         case let .text(string, _): string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .counter: false
+        case .counter, .stamp: false
+        case let .magnifier(_, radius): radius < 10
         }
     }
 
@@ -180,7 +231,7 @@ struct Annotation: Identifiable, Equatable {
     /// Vurgulayıcının kalınlığı: kalemden çok daha geniş.
     var highlightWidth: CGFloat { 10 + lineWidth.value * 3 } // 16 / 22 / 34
 
-    /// Numara dairesinin yarıçapı.
+    /// Numara ve damga dairesinin yarıçapı.
     var counterRadius: CGFloat { 11 + lineWidth.value * 2 } // 15 / 19 / 27
 
     // MARK: - Metin
@@ -191,6 +242,17 @@ struct Annotation: Identifiable, Equatable {
         [
             .font: NSFont.systemFont(ofSize: fontSize, weight: .bold),
             .foregroundColor: color.nsColor,
+        ]
+    }
+
+    /// Etiketin metin çevresindeki boşluğu.
+    var labelPadding: CGSize { CGSize(width: fontSize * 0.4, height: fontSize * 0.18) }
+
+    /// Etiket kutusunun içindeki metin: kutunun renginin üstünde okunur renkte.
+    var labelAttributes: [NSAttributedString.Key: Any] {
+        [
+            .font: NSFont.systemFont(ofSize: fontSize, weight: .bold),
+            .foregroundColor: color.contrastingTextColor,
         ]
     }
 
@@ -215,9 +277,11 @@ struct Annotation: Identifiable, Equatable {
         case let .highlight(points):
             CGRect(enclosing: points).insetBy(dx: -highlightWidth / 2, dy: -highlightWidth / 2)
         case let .text(string, origin):
-            CGRect(origin: origin, size: NSAttributedString(string: string, attributes: textAttributes).size())
-        case let .counter(_, center):
+            textBounds(string, origin: origin)
+        case let .counter(_, center), let .stamp(_, center):
             CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
+        case let .magnifier(center, radius):
+            CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
         }
     }
 
@@ -245,11 +309,19 @@ struct Annotation: Identifiable, Equatable {
             return Self.stroke(points, contains: point, reach: reach)
         case let .highlight(points):
             return Self.stroke(points, contains: point, reach: tolerance + highlightWidth / 2)
-        case let .counter(_, center):
+        case let .counter(_, center), let .stamp(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
+        case let .magnifier(center, radius):
+            return hypot(point.x - center.x, point.y - center.y) <= radius + tolerance
         case .text, .blur, .pixelate:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         }
+    }
+
+    /// Metnin kapladığı alan; etiketse kutunun boşluğu da dahil.
+    private func textBounds(_ string: String, origin: CGPoint) -> CGRect {
+        let rect = CGRect(origin: origin, size: NSAttributedString(string: string, attributes: textAttributes).size())
+        return hasBackground ? rect.insetBy(dx: -labelPadding.width, dy: -labelPadding.height) : rect
     }
 
     private static func stroke(_ points: [CGPoint], contains point: CGPoint, reach: CGFloat) -> Bool {
@@ -271,6 +343,8 @@ struct Annotation: Identifiable, Equatable {
         case let .highlight(points): copy.shape = .highlight(points.map(move))
         case let .text(string, origin): copy.shape = .text(string, origin: move(origin))
         case let .counter(number, center): copy.shape = .counter(number, center: move(center))
+        case let .stamp(kind, center): copy.shape = .stamp(kind, center: move(center))
+        case let .magnifier(center, radius): copy.shape = .magnifier(center: move(center), radius: radius)
         case let .blur(rect): copy.shape = .blur(rect.offsetBy(dx: delta.width, dy: delta.height))
         case let .pixelate(rect): copy.shape = .pixelate(rect.offsetBy(dx: delta.width, dy: delta.height))
         }

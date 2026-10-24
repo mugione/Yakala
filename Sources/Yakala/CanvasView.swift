@@ -28,6 +28,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
 
     private var textField: NSTextField?
     private var textOrigin: CGPoint = .zero
+    private var textHasBackground = false
     private var editingTextID: Annotation.ID?
 
     init(model: EditorModel, insets: NSEdgeInsets) {
@@ -159,7 +160,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
     override func resetCursorRects() {
         let cursor: NSCursor = switch model.tool {
         case .select: .arrow
-        case .text: .iBeam
+        case .text, .label: .iBeam
         default: .crosshair
         }
         addCursorRect(imageRect, cursor: cursor)
@@ -201,7 +202,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
             dragStart = point
             lastDragPoint = point
             hasMovedSelection = false
-        case .text:
+        case .text, .label:
             if let hit = annotation(at: point), case let .text(_, origin) = hit.shape {
                 beginTextEditing(at: origin, editing: hit)
             } else {
@@ -244,7 +245,10 @@ final class CanvasView: NSView, NSTextFieldDelegate {
             // Numara bırakılmadan önce sürüklenerek yerine oturtulabilir.
             guard let draft = model.draft, case let .counter(number, _) = draft.shape else { return }
             model.draft?.shape = .counter(number, center: point)
-        case .text:
+        case .stamp:
+            guard let draft = model.draft, case let .stamp(kind, _) = draft.shape else { return }
+            model.draft?.shape = .stamp(kind, center: point)
+        case .text, .label:
             break
         default:
             if event.modifierFlags.contains(.shift) {
@@ -275,9 +279,12 @@ final class CanvasView: NSView, NSTextFieldDelegate {
         case .pen: shape = .pen([start])
         case .highlighter: shape = .highlight([start])
         case .counter: shape = .counter(model.nextCounterNumber, center: end)
+        case .stamp: shape = .stamp(model.stampKind, center: end)
+        // Büyüteç: tıklanan nokta merkez, sürükleme mesafesi yarıçap.
+        case .magnifier: shape = .magnifier(center: start, radius: hypot(end.x - start.x, end.y - start.y))
         case .blur: shape = .blur(CGRect(corner: start, end))
         case .pixelate: shape = .pixelate(CGRect(corner: start, end))
-        case .select, .text: return nil
+        case .select, .text, .label: return nil
         }
         return Annotation(shape: shape, color: model.color, lineWidth: model.lineWidth)
     }
@@ -344,7 +351,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
     private func beginTextEditing(at origin: CGPoint, editing existing: Annotation?) {
         endTextEditing(commit: true)
         let style = existing ?? Annotation(shape: .text("", origin: origin), color: model.color,
-                                           lineWidth: model.lineWidth)
+                                           lineWidth: model.lineWidth, hasBackground: model.tool == .label)
 
         let field = NSTextField(string: "")
         if case let .text(string, _) = existing?.shape {
@@ -352,10 +359,12 @@ final class CanvasView: NSView, NSTextFieldDelegate {
         }
         field.isBordered = false
         field.isBezeled = false
-        field.drawsBackground = false
+        // Etiket yazılırken de kutusunun renginde görünür.
+        field.drawsBackground = style.hasBackground
+        field.backgroundColor = style.color.nsColor
         field.focusRingType = .none
         field.font = .systemFont(ofSize: style.fontSize * zoom, weight: .bold)
-        field.textColor = style.color.nsColor
+        field.textColor = style.hasBackground ? style.color.contrastingTextColor : style.color.nsColor
         field.placeholderString = "Metin yaz…"
         field.cell?.wraps = false
         field.cell?.isScrollable = true
@@ -363,6 +372,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
 
         textField = field
         textOrigin = origin
+        textHasBackground = style.hasBackground
         editingTextID = existing?.id
         model.editingTextID = existing?.id
 
@@ -407,7 +417,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
         guard let field = textField else { return }
         textField = nil
         if commit {
-            model.commitText(field.stringValue, at: textOrigin, editing: editingTextID)
+            model.commitText(field.stringValue, at: textOrigin, editing: editingTextID, background: textHasBackground)
         } else {
             model.editingTextID = nil
         }

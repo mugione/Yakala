@@ -31,7 +31,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 820, height: 460) // araç çubuğu 10 araçla bu genişliğe sığar
+        window.minSize = NSSize(width: 940, height: 460) // araç çubuğu 13 araçla bu genişliğe sığar
         super.init(window: window)
         window.delegate = self
 
@@ -91,7 +91,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             (visible.height * 0.75 - chrome.height) / image.height
         )
         return NSSize(
-            width: max(820, image.width * ratio + chrome.width),
+            width: max(940, image.width * ratio + chrome.width),
             height: max(460, image.height * ratio + chrome.height)
         )
     }
@@ -128,8 +128,17 @@ private struct EditorView: View {
                               help: "\(tool.title) (\(tool.shortcut.uppercased()))") {
                         model.selectTool(tool)
                     } label: {
-                        Image(systemName: tool.symbol)
-                            .font(.system(size: 14, weight: .medium))
+                        if tool == .stamp {
+                            // Damga düğmesi seçili işareti gösterir.
+                            Text(model.stampKind.glyph)
+                                .font(.system(size: 16, weight: .bold))
+                        } else {
+                            Image(systemName: tool.symbol)
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                    }
+                    if tool == .stamp {
+                        StampMenu(model: model)
                     }
                 }
             }
@@ -287,6 +296,29 @@ private struct ColorSwatch: View {
         .buttonStyle(.plain)
         .help(color.title)
         .accessibilityLabel(color.title)
+    }
+}
+
+/// Damga türünü seçen küçük açılır menü (✓ ✗ ? !).
+private struct StampMenu: View {
+    let model: EditorModel
+
+    var body: some View {
+        Menu {
+            ForEach(StampKind.allCases) { kind in
+                Button("\(kind.glyph)  \(kind.title)") {
+                    model.setStampKind(kind)
+                }
+            }
+        } label: {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 9, weight: .semibold))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Damga türü")
+        .accessibilityLabel("Damga türü")
     }
 }
 
