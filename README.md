@@ -42,9 +42,10 @@
 ## Özellikler
 
 - ⚡ **Tek kısayolla yakala.** **⇧⌘2**'ye bas, ekran donar; fareyle alanı seç. Tek tık tüm ekranı alır.
-- ✏️ **İşaretle.** Ok, dikdörtgen, yuvarlak, kalem ve metin; 7 renk, 3 kalınlık.
+- 🪟 **Pencere yakala.** **⇧⌘1**'e bas ve bir pencereye tıkla; köşeleri saydam, tam o pencere alınır.
+- ✏️ **İşaretle.** Ok, dikdörtgen, yuvarlak, kalem, vurgulayıcı, metin ve numaralı adımlar (①②③); 7 renk, 3 kalınlık.
 - 🙈 **Gizle.** Şifreleri, e-postaları, kişisel bilgileri bulanıklaştır ya da pikselleştir.
-- 📋 **Kopyala ve devam et.** ⌘C ile görüntü panoya gider, pencere kapanır ve çalıştığın uygulamaya dönersin: hemen ⌘V.
+- 📋 **Kopyala ya da kaydet, devam et.** ⌘C ya da ⌘S'den sonra pencere kapanır ve çalıştığın uygulamaya dönersin: hemen ⌘V.
 - 💾 **Otomatik kayıt.** İstersen her görüntü seçtiğin klasöre kendiliğinden kaydedilir.
 - ↩️ **Geri al, taşı, düzenle.** Çizdiğin her şekil sonradan seçilip taşınabilir, rengi değiştirilebilir.
 - 🖥️ **Birden fazla ekran** ve Retina çözünürlüğü desteklenir.
@@ -141,10 +142,10 @@ codesign -d --entitlements - /Applications/Yakala.app
 **İndirdiğin DMG'nin değiştirilmediği.** Sürüm sayfasındaki `.sha256` dosyasını DMG ile aynı klasöre indir:
 
 ```bash
-shasum -a 256 -c Yakala-1.1.dmg.sha256
+shasum -a 256 -c Yakala-1.2.dmg.sha256
 ```
 
-`Yakala-1.1.dmg: OK` görmelisin.
+`Yakala-1.2.dmg: OK` görmelisin.
 
 **Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
 
@@ -158,12 +159,13 @@ Yakala menü çubuğunda bir simge olarak çalışır; Dock'ta görünmez.
 | Ne yapmak istiyorsun? | Nasıl? |
 |---|---|
 | Alan seçip yakalamak | **⇧⌘2** veya menü çubuğu simgesine tıkla, sonra sürükle |
+| Bir pencereyi yakalamak | **⇧⌘1**, sonra pencereye tıkla. Alan seçerken **Boşluk** tuşu da pencere seçimine geçer |
 | Tüm ekranı yakalamak | Alan seçerken sürüklemeden **tek tıkla** |
 | Vazgeçmek | **Esc** veya sağ tık |
 | Panoya kopyalamak | Düzenleyicide **⌘C**: pencere kapanır, önceki uygulamana dönersin |
-| Kaydetmek | **⌘S**. Bir kez kaydettikten sonra ⌘S aynı dosyayı günceller; **⇧⌘S** yeni dosya |
+| Kaydetmek | **⌘S**: kaydeder ve pencereyi kapatır. Bir kez kaydedilmiş görüntüde aynı dosyayı günceller; **⇧⌘S** yeni dosya |
 | Geri almak / yinelemek | **⌘Z** / **⇧⌘Z** |
-| Menüyü açmak | Simgeye **sağ tık**: Tüm Ekranı Al, Son Görüntüyü Göster, Ayarlar…, Hakkında |
+| Menüyü açmak | Simgeye **sağ tık**: Alan Seç, Pencere Seç, Tüm Ekranı Al, Son Görüntüyü Göster, Ayarlar…, Hakkında |
 
 ### Düzenleyici araçları
 
@@ -178,7 +180,9 @@ Yakala menü çubuğunda bir simge olarak çalışır; Dock'ta görünmez.
 | Dikdörtgen | `R` | Shift: kare |
 | Yuvarlak | `O` | Shift: daire |
 | Kalem | `P` | Serbest çizim, otomatik yumuşatılır |
+| Vurgulayıcı | `H` | Yarı saydam fosforlu kalem; yazılar okunur kalır. Shift: düz çizgi |
 | Metin | `T` | Tıkla ve yaz; Enter kaydeder. Var olan yazıya tıklayınca düzenlersin |
+| Numara | `N` | Her tıklamada sıradaki numarayı koyar (①②③); bırakmadan sürükleyerek yerleştir |
 | Bulanıklaştır | `B` | Gizlenecek alanı sürükle |
 | Pikselleştir | `X` | Yazıları gizlemek için bulanıklaştırmadan daha güvenli |
 
@@ -303,10 +307,10 @@ Büyük bir değişiklik düşünüyorsan önce bir issue açıp konuşalım.
 **Yakala** (Turkish for *"capture"*) is a lightweight, open-source screenshot and annotation tool for macOS.
 It lives in the menu bar; the interface is in Turkish.
 
-- **Capture:** press **⇧⌘2**, drag to select an area (single click for the whole screen).
-- **Annotate:** arrow, rectangle, ellipse, pen and text; 7 colors, 3 line widths, undo/redo.
+- **Capture:** press **⇧⌘2**, drag to select an area (single click for the whole screen), or **⇧⌘1** and click a window.
+- **Annotate:** arrow, rectangle, ellipse, pen, highlighter, text and numbered steps; 7 colors, 3 line widths, undo/redo.
 - **Redact:** blur or pixelate sensitive information.
-- **Copy & go:** ⌘C copies the result, closes the editor and returns you to the previous app.
+- **Copy & go:** ⌘C copies (⌘S saves) the result, closes the editor and returns you to the previous app.
 - **Private:** runs in the macOS App Sandbox **without any network entitlement**, no analytics, no
   third-party dependencies. Your screenshots never leave your Mac. Verify it yourself:
   `codesign -d --entitlements - /Applications/Yakala.app`. Each release ships a `.sha256` checksum.

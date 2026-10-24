@@ -20,7 +20,6 @@ final class EditorModel {
     private(set) var tool: Tool = .arrow
     private(set) var color: AnnotationColor = .red
     private(set) var lineWidth: LineWidth = .medium
-    private(set) var justSaved = false
     /// Görüntünün kaydedildiği dosya. Bir kez kaydedildikten sonra Kaydet (⌘S) bu dosyayı günceller.
     private(set) var savedURL: URL?
 
@@ -30,6 +29,14 @@ final class EditorModel {
     init(capture: Capture) {
         self.capture = capture
         renderer = AnnotationRenderer(capture: capture)
+    }
+
+    /// Numara aracının koyacağı sıradaki numara: mevcut en büyük numaranın bir fazlası.
+    var nextCounterNumber: Int {
+        let numbers = annotations.compactMap { annotation -> Int? in
+            if case let .counter(number, _) = annotation.shape { number } else { nil }
+        }
+        return (numbers.max() ?? 0) + 1
     }
 
     var canUndo: Bool { !undoStack.isEmpty }
@@ -157,25 +164,28 @@ final class EditorModel {
     }
 
     /// Daha önce kaydedildiyse aynı dosyayı günceller, kaydedilmediyse kaydetme penceresini açar.
-    func save() {
+    /// Kaydedildiyse true döner; pencerede vazgeçilirse ya da hata olursa false.
+    @discardableResult
+    func save() -> Bool {
         guard let savedURL else {
-            saveAs()
-            return
+            return saveAs()
         }
         do {
             try ImageExporter.write(flattened(), to: savedURL)
-            flashSaved()
+            return true
         } catch {
             NSAlert(error: error).runModal()
+            return false
         }
     }
 
-    func saveAs() {
+    @discardableResult
+    func saveAs() -> Bool {
         guard let url = ImageExporter.saveWithPanel(flattened(), startingIn: AppSettings.shared.saveFolder) else {
-            return
+            return false
         }
         savedURL = url
-        flashSaved()
+        return true
     }
 
     /// Yakalandığı anda, çizimler olmadan kayıt klasörüne yazar (otomatik kayıt).
@@ -188,13 +198,5 @@ final class EditorModel {
     func revealInFinder() {
         guard let savedURL else { return }
         NSWorkspace.shared.activateFileViewerSelecting([savedURL])
-    }
-
-    private func flashSaved() {
-        justSaved = true
-        Task {
-            try? await Task.sleep(for: .seconds(1.5))
-            justSaved = false
-        }
     }
 }

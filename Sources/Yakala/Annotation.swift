@@ -2,7 +2,7 @@ import AppKit
 
 /// Düzenleyicideki araçlar.
 enum Tool: CaseIterable, Identifiable {
-    case select, arrow, rectangle, ellipse, pen, text, blur, pixelate
+    case select, arrow, rectangle, ellipse, pen, highlighter, text, counter, blur, pixelate
 
     var id: Self { self }
 
@@ -13,7 +13,9 @@ enum Tool: CaseIterable, Identifiable {
         case .rectangle: "Dikdörtgen"
         case .ellipse: "Yuvarlak"
         case .pen: "Kalem"
+        case .highlighter: "Vurgulayıcı"
         case .text: "Metin"
+        case .counter: "Numara"
         case .blur: "Bulanıklaştır"
         case .pixelate: "Pikselleştir"
         }
@@ -26,7 +28,9 @@ enum Tool: CaseIterable, Identifiable {
         case .rectangle: "rectangle"
         case .ellipse: "circle"
         case .pen: "pencil.tip"
+        case .highlighter: "highlighter"
         case .text: "textformat"
+        case .counter: "1.circle"
         case .blur: "drop.halffull"
         case .pixelate: "square.grid.3x3.fill"
         }
@@ -40,7 +44,9 @@ enum Tool: CaseIterable, Identifiable {
         case .rectangle: "r"
         case .ellipse: "o"
         case .pen: "p"
+        case .highlighter: "h"
         case .text: "t"
+        case .counter: "n"
         case .blur: "b"
         case .pixelate: "x"
         }
@@ -77,6 +83,14 @@ enum AnnotationColor: CaseIterable, Identifiable {
         case .black: NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
         }
     }
+
+    /// Bu rengin üzerine yazılan yazının okunur rengi (numara aracı).
+    var contrastingTextColor: NSColor {
+        switch self {
+        case .yellow, .white: .black
+        default: .white
+        }
+    }
 }
 
 enum LineWidth: CaseIterable, Identifiable {
@@ -110,8 +124,12 @@ struct Annotation: Identifiable, Equatable {
         /// Dikdörtgenin içine çizilen elips (Shift ile daire).
         case ellipse(CGRect)
         case pen([CGPoint])
+        /// Yarı saydam, kalın fosforlu kalem çizgisi.
+        case highlight([CGPoint])
         /// `origin` metnin sol üst köşesi.
         case text(String, origin: CGPoint)
+        /// İçinde sıra numarası olan dolu daire (adım adım anlatım için).
+        case counter(Int, center: CGPoint)
         case blur(CGRect)
         case pixelate(CGRect)
     }
@@ -128,11 +146,20 @@ struct Annotation: Identifiable, Equatable {
         self.lineWidth = lineWidth
     }
 
-    /// Bulanıklaştırma ve pikselleştirme diğer şekillerin altında çizilir.
     var isRedaction: Bool {
         switch shape {
         case .blur, .pixelate: true
         default: false
+        }
+    }
+
+    /// Çizim sırası: önce gizleme bölgeleri, sonra vurgular, en üstte diğer şekiller.
+    /// Böylece oklar ve yazılar hiçbir zaman bulanıklığın ya da vurgunun altında kalmaz.
+    var drawLayer: Int {
+        switch shape {
+        case .blur, .pixelate: 0
+        case .highlight: 1
+        default: 2
         }
     }
 
@@ -142,12 +169,19 @@ struct Annotation: Identifiable, Equatable {
         case let .arrow(from, to): hypot(to.x - from.x, to.y - from.y) < 4
         case let .rectangle(rect), let .ellipse(rect), let .blur(rect), let .pixelate(rect):
             rect.width < 3 || rect.height < 3
-        case let .pen(points): points.isEmpty
+        case let .pen(points), let .highlight(points): points.isEmpty
         case let .text(string, _): string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .counter: false
         }
     }
 
     var arrowHeadLength: CGFloat { max(12, lineWidth.value * 4) }
+
+    /// Vurgulayıcının kalınlığı: kalemden çok daha geniş.
+    var highlightWidth: CGFloat { 10 + lineWidth.value * 3 } // 16 / 22 / 34
+
+    /// Numara dairesinin yarıçapı.
+    var counterRadius: CGFloat { 11 + lineWidth.value * 2 } // 15 / 19 / 27
 
     // MARK: - Metin
 
@@ -157,6 +191,13 @@ struct Annotation: Identifiable, Equatable {
         [
             .font: NSFont.systemFont(ofSize: fontSize, weight: .bold),
             .foregroundColor: color.nsColor,
+        ]
+    }
+
+    var counterAttributes: [NSAttributedString.Key: Any] {
+        [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: counterRadius * 1.15, weight: .bold),
+            .foregroundColor: color.contrastingTextColor,
         ]
     }
 
@@ -171,8 +212,12 @@ struct Annotation: Identifiable, Equatable {
             rect
         case let .pen(points):
             CGRect(enclosing: points).insetBy(dx: -lineWidth.value / 2, dy: -lineWidth.value / 2)
+        case let .highlight(points):
+            CGRect(enclosing: points).insetBy(dx: -highlightWidth / 2, dy: -highlightWidth / 2)
         case let .text(string, origin):
             CGRect(origin: origin, size: NSAttributedString(string: string, attributes: textAttributes).size())
+        case let .counter(_, center):
+            CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         }
     }
 
@@ -197,12 +242,20 @@ struct Annotation: Identifiable, Equatable {
             return isInside(radiusX: rect.width / 2 + reach, radiusY: rect.height / 2 + reach)
                 && !isInside(radiusX: rect.width / 2 - reach, radiusY: rect.height / 2 - reach)
         case let .pen(points):
-            guard let first = points.first else { return false }
-            if points.count == 1 { return point.distance(toSegment: first, first) <= reach }
-            return zip(points, points.dropFirst()).contains { point.distance(toSegment: $0, $1) <= reach }
+            return Self.stroke(points, contains: point, reach: reach)
+        case let .highlight(points):
+            return Self.stroke(points, contains: point, reach: tolerance + highlightWidth / 2)
+        case let .counter(_, center):
+            return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
         case .text, .blur, .pixelate:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         }
+    }
+
+    private static func stroke(_ points: [CGPoint], contains point: CGPoint, reach: CGFloat) -> Bool {
+        guard let first = points.first else { return false }
+        if points.count == 1 { return point.distance(toSegment: first, first) <= reach }
+        return zip(points, points.dropFirst()).contains { point.distance(toSegment: $0, $1) <= reach }
     }
 
     func moved(by delta: CGSize) -> Annotation {
@@ -215,7 +268,9 @@ struct Annotation: Identifiable, Equatable {
         case let .rectangle(rect): copy.shape = .rectangle(rect.offsetBy(dx: delta.width, dy: delta.height))
         case let .ellipse(rect): copy.shape = .ellipse(rect.offsetBy(dx: delta.width, dy: delta.height))
         case let .pen(points): copy.shape = .pen(points.map(move))
+        case let .highlight(points): copy.shape = .highlight(points.map(move))
         case let .text(string, origin): copy.shape = .text(string, origin: move(origin))
+        case let .counter(number, center): copy.shape = .counter(number, center: move(center))
         case let .blur(rect): copy.shape = .blur(rect.offsetBy(dx: delta.width, dy: delta.height))
         case let .pixelate(rect): copy.shape = .pixelate(rect.offsetBy(dx: delta.width, dy: delta.height))
         }

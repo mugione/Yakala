@@ -31,7 +31,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 760, height: 460)
+        window.minSize = NSSize(width: 820, height: 460) // araç çubuğu 10 araçla bu genişliğe sığar
         super.init(window: window)
         window.delegate = self
 
@@ -41,7 +41,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.contentView = NSHostingView(rootView: EditorView(
             model: model,
             layout: layout,
-            onCopy: { [weak self] in self?.copyAndClose() }
+            onCopy: { [weak self] in self?.copyAndClose() },
+            onSave: { [weak self] asNewFile in self?.saveAndClose(asNewFile: asNewFile) }
         ))
         window.setContentSize(Self.contentSize(for: capture, layout: layout))
         window.center()
@@ -65,6 +66,15 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         Toast.show("Panoya kopyalandı")
     }
 
+    /// Kaydeder; başarılıysa pencereyi kapatır ve bildirim gösterir.
+    /// Kaydetme penceresinde vazgeçilirse düzenleyici açık kalır.
+    func saveAndClose(asNewFile: Bool = false) {
+        let saved = asNewFile ? model.saveAs() : model.save()
+        guard saved else { return }
+        close()
+        Toast.show("Kaydedildi")
+    }
+
     func windowWillClose(_ notification: Notification) {
         previousApp?.activate()
     }
@@ -81,7 +91,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             (visible.height * 0.75 - chrome.height) / image.height
         )
         return NSSize(
-            width: max(760, image.width * ratio + chrome.width),
+            width: max(820, image.width * ratio + chrome.width),
             height: max(460, image.height * ratio + chrome.height)
         )
     }
@@ -91,6 +101,8 @@ private struct EditorView: View {
     let model: EditorModel
     let layout: EditorLayout
     let onCopy: () -> Void
+    /// Parametre: yeni bir dosyaya mı kaydedilecek (Farklı Kaydet).
+    let onSave: (Bool) -> Void
 
     var body: some View {
         EditorCanvas(model: model, insets: layout.canvasInsets)
@@ -199,10 +211,11 @@ private struct EditorView: View {
 
             if model.savedURL != nil {
                 Button("Farklı Kaydet…") {
-                    model.saveAs()
+                    onSave(true)
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
                 .floatingButton(prominent: false)
+                .help("Yeni bir dosyaya kaydet ve pencereyi kapat (⇧⌘S)")
             }
 
             Button(action: onCopy) {
@@ -213,14 +226,14 @@ private struct EditorView: View {
             .help("Panoya kopyala ve pencereyi kapat (⌘C)")
 
             Button {
-                model.save()
+                onSave(false)
             } label: {
                 // Henüz kaydedilmediyse pencere açılacağını "…" belirtir.
-                Label(model.justSaved ? "Kaydedildi" : (model.savedURL == nil ? "Kaydet…" : "Kaydet"),
-                      systemImage: model.justSaved ? "checkmark" : "square.and.arrow.down")
+                Label(model.savedURL == nil ? "Kaydet…" : "Kaydet", systemImage: "square.and.arrow.down")
             }
             .keyboardShortcut("s")
             .floatingButton(prominent: true)
+            .help("Kaydet ve pencereyi kapat (⌘S)")
         }
         .controlSize(.large)
     }

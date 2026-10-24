@@ -1,43 +1,86 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// Ekranın "dondurulmuş" görüntüsünün üzerinde fareyle alan seçtirir.
+/// Seçimin sonucu: seçilen alanın görüntüsü ya da tıklanan pencere.
+enum SelectionResult {
+    case area(Capture)
+    case window(CGWindowID)
+}
+
+/// Ekranın "dondurulmuş" görüntüsünün üzerinde fareyle alan ya da pencere seçtirir.
 /// Önce ekran yakalanır, sonra her ekrana o görüntüyü gösteren bir katman açılır;
 /// böylece seçim sırasında açılır menüler ve fare üzerindeki görünümler kaybolmaz.
 @MainActor
 final class AreaSelector {
+    enum Mode {
+        /// Sürükleyerek alan seç; tek tık tüm ekranı alır.
+        case area
+        /// Fare altındaki pencere vurgulanır; tıklanan pencere alınır.
+        case window
+    }
+
+    private(set) var mode: Mode = .area
+    /// Fare altındaki pencere (pencere modunda vurgulanır).
+    private(set) var hoveredWindow: WindowInfo?
+
+    private var windows: [WindowInfo] = []
     private var panels: [SelectionPanel] = []
-    private var continuation: CheckedContinuation<Capture?, Never>?
+    private var continuation: CheckedContinuation<SelectionResult?, Never>?
     private var previousApp: NSRunningApplication?
 
-    /// Seçilen bölgenin görüntüsünü döner. Esc veya sağ tıkla vazgeçilirse nil.
-    /// Sürüklemeden tek tıklanırsa o ekranın tamamı döner.
-    func selectArea(from shots: [ScreenShot]) async -> Capture? {
+    /// Esc veya sağ tıkla vazgeçilirse nil döner. Seçim ekranında Boşluk tuşu iki mod arasında geçiş yapar.
+    /// - Parameter windows: Seçilebilecek pencereler, öndekinden arkadakine.
+    func select(from shots: [ScreenShot], windows: [WindowInfo], startingIn mode: Mode) async -> SelectionResult? {
         previousApp = NSWorkspace.shared.frontmostApplication
+        self.mode = mode
+        self.windows = windows
+        hoveredWindow = nil
+        updateHover()
+
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
-            panels = shots.map { shot in
-                SelectionPanel(shot: shot) { [weak self] capture in self?.finish(with: capture) }
-            }
+            panels = shots.map { SelectionPanel(shot: $0, selector: self) }
             NSApp.activate()
             panels.forEach { $0.orderFrontRegardless() }
             let underMouse = NSScreen.underMouse
             (panels.first { $0.screenOfShot == underMouse } ?? panels.first)?.makeKey()
-            NSCursor.crosshair.set()
+            cursor.set()
         }
     }
 
-    private func finish(with capture: Capture?) {
+    var cursor: NSCursor { mode == .window ? .pointingHand : .crosshair }
+
+    func toggleMode() {
+        mode = mode == .area ? .window : .area
+        updateHover()
+        cursor.set()
+        redraw()
+    }
+
+    /// Fare konumuna göre vurgulanan pencereyi günceller.
+    func updateHover() {
+        let mouse = NSEvent.mouseLocation
+        let hovered = mode == .window ? windows.first { $0.frame.contains(mouse) } : nil
+        guard hovered?.id != hoveredWindow?.id else { return }
+        hoveredWindow = hovered
+        redraw()
+    }
+
+    func finish(with result: SelectionResult?) {
         panels.forEach { $0.close() }
         panels = []
         NSCursor.arrow.set()
         // Vazgeçildiyse odağı kullanıcının önceki uygulamasına geri ver.
-        if capture == nil {
+        if result == nil {
             previousApp?.activate()
         }
         previousApp = nil
-        continuation?.resume(returning: capture)
+        continuation?.resume(returning: result)
         continuation = nil
+    }
+
+    private func redraw() {
+        panels.forEach { $0.selectionView.needsDisplay = true }
     }
 }
 
@@ -45,9 +88,11 @@ final class AreaSelector {
 /// Odak çalmayan (non-activating) panel olduğu için uygulama öne gelmese de Esc tuşunu alır.
 private final class SelectionPanel: NSPanel {
     let screenOfShot: NSScreen
+    let selectionView: SelectionView
 
-    init(shot: ScreenShot, onFinish: @escaping (Capture?) -> Void) {
+    init(shot: ScreenShot, selector: AreaSelector) {
         screenOfShot = shot.screen
+        selectionView = SelectionView(capture: shot.capture, selector: selector)
         super.init(
             contentRect: shot.screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -65,12 +110,11 @@ private final class SelectionPanel: NSPanel {
         setFrame(shot.screen.frame, display: false)
 
         let background = FrozenScreenView(image: shot.capture.image)
-        let selection = SelectionView(capture: shot.capture, onFinish: onFinish)
-        selection.frame = background.bounds
-        selection.autoresizingMask = [.width, .height]
-        background.addSubview(selection)
+        selectionView.frame = background.bounds
+        selectionView.autoresizingMask = [.width, .height]
+        background.addSubview(selectionView)
         contentView = background
-        makeFirstResponder(selection)
+        makeFirstResponder(selectionView)
     }
 
     override var canBecomeKey: Bool { true }
@@ -99,10 +143,10 @@ private final class FrozenScreenView: NSView {
     }
 }
 
-/// Karartma, seçim çerçevesi ve ölçü etiketini çizer; fare ve klavyeyi dinler.
+/// Karartma, seçim çerçevesi, pencere vurgusu ve etiketleri çizer; fare ve klavyeyi dinler.
 private final class SelectionView: NSView {
     private let capture: Capture
-    private let onFinish: (Capture?) -> Void
+    private weak var selector: AreaSelector?
     private var dragStart: NSPoint?
     private var selection: NSRect?
 
@@ -111,9 +155,9 @@ private final class SelectionView: NSView {
         .foregroundColor: NSColor.white,
     ]
 
-    init(capture: Capture, onFinish: @escaping (Capture?) -> Void) {
+    init(capture: Capture, selector: AreaSelector) {
         self.capture = capture
-        self.onFinish = onFinish
+        self.selector = selector
         super.init(frame: .zero)
         addTrackingArea(NSTrackingArea(
             rect: .zero,
@@ -130,32 +174,51 @@ private final class SelectionView: NSView {
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
+    private var isWindowMode: Bool { selector?.mode == .window }
+
     // MARK: - İmleç ve klavye
 
-    override func cursorUpdate(with event: NSEvent) { NSCursor.crosshair.set() }
-    override func mouseMoved(with event: NSEvent) { NSCursor.crosshair.set() }
+    override func cursorUpdate(with event: NSEvent) {
+        selector?.cursor.set()
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        selector?.updateHover()
+        selector?.cursor.set()
+    }
 
     override func mouseEntered(with event: NSEvent) {
         // Birden fazla ekran varsa Esc'nin çalışması için fare hangi ekrandaysa o katman odak alır.
         window?.makeKey()
-        NSCursor.crosshair.set()
+        selector?.cursor.set()
     }
 
     override func keyDown(with event: NSEvent) {
-        if Int(event.keyCode) == kVK_Escape {
-            onFinish(nil)
-        } else {
+        switch Int(event.keyCode) {
+        case kVK_Escape:
+            selector?.finish(with: nil)
+        case kVK_Space where dragStart == nil:
+            // macOS'taki gibi: Boşluk alan ve pencere seçimi arasında geçiş yapar.
+            selection = nil
+            selector?.toggleMode()
+        default:
             super.keyDown(with: event)
         }
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        onFinish(nil)
+        selector?.finish(with: nil)
     }
 
     // MARK: - Seçim
 
     override func mouseDown(with event: NSEvent) {
+        if isWindowMode {
+            if let window = selector?.hoveredWindow {
+                selector?.finish(with: .window(window.id))
+            }
+            return
+        }
         dragStart = clampedLocation(of: event)
         selection = nil
         needsDisplay = true
@@ -179,7 +242,7 @@ private final class SelectionView: NSView {
 
         // Sürüklemeden tıklandıysa ekranın tamamı alınır.
         guard let selection, selection.width >= 4, selection.height >= 4 else {
-            onFinish(capture)
+            selector?.finish(with: .area(capture))
             return
         }
         // AppKit'te orijin sol alttadır, görüntüde sol üstte: dikey ekseni çevir.
@@ -189,7 +252,7 @@ private final class SelectionView: NSView {
             width: selection.width,
             height: selection.height
         )
-        onFinish(capture.cropped(to: topLeftRect))
+        selector?.finish(with: capture.cropped(to: topLeftRect).map(SelectionResult.area))
     }
 
     private func clampedLocation(of event: NSEvent) -> NSPoint {
@@ -203,6 +266,14 @@ private final class SelectionView: NSView {
     // MARK: - Çizim
 
     override func draw(_ dirtyRect: NSRect) {
+        if isWindowMode {
+            drawWindowMode()
+        } else {
+            drawAreaMode()
+        }
+    }
+
+    private func drawAreaMode() {
         let dim = NSBezierPath(rect: bounds)
         if let selection {
             dim.append(NSBezierPath(rect: selection))
@@ -212,9 +283,7 @@ private final class SelectionView: NSView {
         dim.fill()
 
         guard let selection else {
-            drawPill("Alan seçmek için sürükle  ·  Tüm ekran için tıkla  ·  Vazgeçmek için Esc") { size in
-                NSPoint(x: bounds.midX - size.width / 2, y: bounds.maxY - 90)
-            }
+            drawHint("Alan seçmek için sürükle  ·  Tüm ekran için tıkla  ·  Pencere için Boşluk  ·  Vazgeçmek için Esc")
             return
         }
 
@@ -231,6 +300,39 @@ private final class SelectionView: NSView {
             if origin.y < bounds.minY + 4 { origin.y = selection.minY + 6 }
             origin.x = max(origin.x, bounds.minX + 4)
             return origin
+        }
+    }
+
+    /// Fare altındaki pencere aydınlık ve mavi çerçeveli kalır, geri kalan kararır.
+    private func drawWindowMode() {
+        let screenOrigin = window?.frame.origin ?? .zero
+        let hovered = selector?.hoveredWindow.map {
+            $0.frame.offsetBy(dx: -screenOrigin.x, dy: -screenOrigin.y)
+        }
+
+        let dim = NSBezierPath(rect: bounds)
+        if let hovered {
+            dim.append(NSBezierPath(rect: hovered))
+            dim.windingRule = .evenOdd
+        }
+        NSColor.black.withAlphaComponent(0.35).setFill()
+        dim.fill()
+
+        if let hovered {
+            NSColor.controlAccentColor.withAlphaComponent(0.15).setFill()
+            hovered.fill()
+            NSColor.controlAccentColor.setStroke()
+            let border = NSBezierPath(rect: hovered.insetBy(dx: 1.5, dy: 1.5))
+            border.lineWidth = 3
+            border.stroke()
+        }
+
+        drawHint("Pencereye tıkla  ·  Alan seçimi için Boşluk  ·  Vazgeçmek için Esc")
+    }
+
+    private func drawHint(_ text: String) {
+        drawPill(text) { size in
+            NSPoint(x: bounds.midX - size.width / 2, y: bounds.maxY - 90)
         }
     }
 

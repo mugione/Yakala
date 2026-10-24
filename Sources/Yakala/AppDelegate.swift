@@ -1,17 +1,19 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// Menü çubuğu simgesini ve global kısayolu yönetir.
-/// Sol tık veya ⇧⌘2: alan seç. Sağ tık (veya Control + tık): menüyü aç.
+/// Menü çubuğu simgesini ve global kısayolları yönetir.
+/// Sol tık veya ⇧⌘2: alan seç. ⇧⌘1: pencere seç. Sağ tık (veya Control + tık): menüyü aç.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private enum CaptureMode {
         case area
+        case window
         case fullScreen
     }
 
     private var statusItem: NSStatusItem!
     private var hotKey: GlobalHotKey?
+    private var windowHotKey: GlobalHotKey?
     private let areaSelector = AreaSelector()
     /// Son görüntünün düzenleyicisi. Pencere kapansa da tutulur; menüden yeniden açılınca çizimler kaybolmaz.
     private var editorController: EditorWindowController?
@@ -24,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let icon = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Yakala")
             icon?.isTemplate = true
             button.image = icon
-            button.toolTip = "Tıkla veya ⇧⌘2: alan seç\nSağ tık: menü"
+            button.toolTip = "Tıkla veya ⇧⌘2: alan seç\n⇧⌘1: pencere seç\nSağ tık: menü"
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -35,6 +37,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if hotKey == nil {
             NSLog("Yakala: ⇧⌘2 kısayolu kaydedilemedi, başka bir uygulama kullanıyor olabilir.")
+        }
+        windowHotKey = GlobalHotKey(keyCode: kVK_ANSI_1, modifiers: cmdKey | shiftKey) { [weak self] in
+            self?.startCapture(.window, delay: .zero)
+        }
+        if windowHotKey == nil {
+            NSLog("Yakala: ⇧⌘1 kısayolu kaydedilemedi, başka bir uygulama kullanıyor olabilir.")
         }
     }
 
@@ -65,6 +73,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let areaItem = addItem(to: menu, title: "Alan Seç", action: #selector(captureArea))
         areaItem.keyEquivalent = "2"
         areaItem.keyEquivalentModifierMask = [.command, .shift]
+        let windowItem = addItem(to: menu, title: "Pencere Seç", action: #selector(captureWindow))
+        windowItem.keyEquivalent = "1"
+        windowItem.keyEquivalentModifierMask = [.command, .shift]
         addItem(to: menu, title: "Tüm Ekranı Al", action: #selector(captureFullScreen))
         menu.addItem(.separator())
         addItem(to: menu, title: "Son Görüntüyü Göster", action: #selector(showLastCapture), enabled: hasCapture)
@@ -96,6 +107,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startCapture(.area)
     }
 
+    @objc private func captureWindow() {
+        startCapture(.window)
+    }
+
     @objc private func captureFullScreen() {
         startCapture(.fullScreen)
     }
@@ -115,9 +130,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 let capture: Capture?
                 switch mode {
-                case .area:
+                case .area, .window:
+                    // Pencere listesi seçim katmanı açılmadan alınır; katmanın kendisi listeye girmesin.
+                    let windows = ScreenCapturer.visibleWindows()
                     let shots = try await ScreenCapturer.captureAllScreens()
-                    capture = await areaSelector.selectArea(from: shots)
+                    switch await areaSelector.select(from: shots, windows: windows,
+                                                     startingIn: mode == .window ? .window : .area) {
+                    case let .area(image): capture = image
+                    case let .window(id): capture = try await ScreenCapturer.captureWindow(id)
+                    case nil: capture = nil
+                    }
                 case .fullScreen:
                     capture = try await ScreenCapturer.captureScreenUnderMouse()
                 }
@@ -138,7 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func saveLastCapture() {
-        editorController?.model.save()
+        editorController?.saveAndClose()
     }
 
     private func showEditor(for capture: Capture, returningTo previousApp: NSRunningApplication?) {

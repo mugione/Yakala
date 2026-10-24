@@ -22,12 +22,11 @@ final class AnnotationRenderer {
     /// `context` y ekseni aşağı bakan (sol üst orijinli) ve görüntünün nokta ölçeğinde olmalı.
     func draw(_ annotations: [Annotation], in context: CGContext) {
         drawImage(capture.image, in: CGRect(origin: .zero, size: capture.pointSize), context: context)
-        // Gizleme bölgeleri önce çizilir; oklar ve yazılar her zaman üstte kalır.
-        for annotation in annotations where annotation.isRedaction {
-            draw(annotation, in: context)
-        }
-        for annotation in annotations where !annotation.isRedaction {
-            draw(annotation, in: context)
+        // Önce gizleme bölgeleri, sonra vurgular, en üstte diğer şekiller (Annotation.drawLayer).
+        for layer in 0...2 {
+            for annotation in annotations where annotation.drawLayer == layer {
+                draw(annotation, in: context)
+            }
         }
     }
 
@@ -54,7 +53,7 @@ final class AnnotationRenderer {
         draw(annotations, in: context)
 
         guard let output = context.makeImage() else { return nil }
-        return Capture(image: output, scale: capture.scale, date: capture.date)
+        return Capture(image: output, scale: capture.scale, date: capture.date, hasTransparency: capture.hasTransparency)
     }
 
     // MARK: - Şekiller
@@ -81,8 +80,17 @@ final class AnnotationRenderer {
             context.strokePath()
         case let .pen(points):
             drawStroke(through: points, lineWidth: annotation.lineWidth.value, in: context)
+        case let .highlight(points):
+            // Tek katman olarak yarı saydam çizilir; çizginin kendi üstüne bindiği yerler koyulaşmaz.
+            context.setLineWidth(annotation.highlightWidth)
+            context.setAlpha(0.4)
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+            drawStroke(through: points, lineWidth: annotation.highlightWidth, in: context)
+            context.endTransparencyLayer()
         case let .text(string, origin):
             drawText(string, at: origin, attributes: annotation.textAttributes, in: context)
+        case let .counter(number, center):
+            drawCounter(number, at: center, annotation: annotation, in: context)
         case let .blur(rect):
             context.clip(to: rect)
             drawImage(blurred, in: CGRect(origin: .zero, size: capture.pointSize), context: context)
@@ -114,6 +122,24 @@ final class AnnotationRenderer {
         context.addLine(to: CGPoint(x: base.x + uy * halfWidth, y: base.y - ux * halfWidth))
         context.closePath()
         context.fillPath()
+    }
+
+    /// İçinde numara olan dolu daire; ince beyaz kenarı koyu arka planlarda da daireyi ayırır.
+    private func drawCounter(_ number: Int, at center: CGPoint, annotation: Annotation, in context: CGContext) {
+        let radius = annotation.counterRadius
+        let circle = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+        context.fillEllipse(in: circle)
+        let border = max(1.5, radius * 0.12)
+        context.setStrokeColor(NSColor.white.withAlphaComponent(0.9).cgColor)
+        context.setLineWidth(border)
+        context.strokeEllipse(in: circle.insetBy(dx: -border / 2, dy: -border / 2))
+
+        // Rakamlar taban çizgisinin üstünde durur; büyük harf yüksekliğine göre dikeyde ortalanır.
+        let attributes = annotation.counterAttributes
+        let text = NSAttributedString(string: "\(number)", attributes: attributes)
+        let font = attributes[.font] as? NSFont ?? .systemFont(ofSize: radius)
+        let origin = CGPoint(x: center.x - text.size().width / 2, y: center.y + font.capHeight / 2 - font.ascender)
+        drawText(text.string, at: origin, attributes: attributes, in: context)
     }
 
     /// Kalem çizgisini noktaların orta noktalarından geçen eğrilerle yumuşatır.

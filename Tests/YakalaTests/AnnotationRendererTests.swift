@@ -116,6 +116,63 @@ struct AnnotationRendererTests {
 
     /// Gözle kontrol için tüm araçların çizildiği örnek bir PNG yazar.
     /// Çalıştırmak için: YAKALA_SAMPLE_PNG=/yol/ornek.png swift test
+    @Test func counterIsAFilledNumberedCircle() throws {
+        let capture = makeStripedCapture(fill: .white)
+        let counter = Annotation(shape: .counter(7, center: CGPoint(x: 100, y: 50)), color: .red, lineWidth: .thick)
+        let pixels = Pixels(try #require(AnnotationRenderer(capture: capture).renderFlattened([counter])).image)
+
+        // Yarıçap 27 nokta: dairenin içi (rakamın dışında kalan sol kenar) kırmızı, dışı beyaz.
+        #expect(pixels[2 * 78, 100].isRed)
+        #expect(!pixels[2 * 130, 100].isRed)
+        // Rakam beyazla yazılır: dairenin ortasında kırmızı olmayan pikseller vardır.
+        let centerRow = (2 * 90..<2 * 110).map { pixels[$0, 100] }
+        #expect(centerRow.contains { $0.r > 200 && $0.g > 200 && $0.b > 200 })
+    }
+
+    @Test func nextCounterNumberFollowsTheHighestNumber() {
+        let model = EditorModel(capture: makeStripedCapture())
+        #expect(model.nextCounterNumber == 1)
+        model.add(Annotation(shape: .counter(1, center: .zero), color: .red, lineWidth: .medium))
+        model.add(Annotation(shape: .counter(2, center: .zero), color: .red, lineWidth: .medium))
+        #expect(model.nextCounterNumber == 3)
+        model.undo()
+        #expect(model.nextCounterNumber == 2)
+    }
+
+    @Test func highlightIsTranslucentAndStaysBelowOtherShapes() throws {
+        let capture = makeStripedCapture(fill: .white)
+        // Önce ok, sonra vurgu eklenir; vurgu yine de okun altında çizilmeli.
+        let arrow = Annotation(shape: .arrow(from: CGPoint(x: 20, y: 50), to: CGPoint(x: 180, y: 50)),
+                               color: .red, lineWidth: .thick)
+        let highlight = Annotation(shape: .highlight([CGPoint(x: 20, y: 50), CGPoint(x: 180, y: 50)]),
+                                   color: .yellow, lineWidth: .thick)
+        let pixels = Pixels(try #require(AnnotationRenderer(capture: capture).renderFlattened([arrow, highlight])).image)
+
+        // Okun çizgisi (y = 50 nokta) kırmızı kalır.
+        #expect(pixels[2 * 100, 2 * 50].isRed)
+        // Okun dışında, vurgunun içinde (y = 60 nokta): beyazın üstünde açık sarı, opak sarı değil.
+        let tinted = pixels[2 * 100, 2 * 60]
+        #expect(tinted.r > 240 && tinted.g > 200 && (120...230).contains(tinted.b))
+    }
+
+    @Test func windowCaptureKeepsTransparentCorners() throws {
+        // Sol üst köşesi saydam, geri kalanı beyaz 50×50 noktalık "pencere".
+        let context = CGContext(data: nil, width: 100, height: 100, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.setFillColor(gray: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: 100, height: 100))
+        context.clear(CGRect(x: 0, y: 80, width: 20, height: 20))
+        let capture = Capture(image: context.makeImage()!, scale: 2, date: .now, hasTransparency: true)
+
+        let arrow = Annotation(shape: .arrow(from: CGPoint(x: 30, y: 40), to: CGPoint(x: 45, y: 40)),
+                               color: .red, lineWidth: .medium)
+        let output = try #require(AnnotationRenderer(capture: capture).renderFlattened([arrow]))
+        #expect(output.hasTransparency)
+        #expect(Pixels(output.image)[5, 5].a == 0)
+        #expect(Pixels(output.image)[50, 50].a == 255)
+    }
+
     @Test func writesSampleForVisualCheck() throws {
         guard let path = ProcessInfo.processInfo.environment["YAKALA_SAMPLE_PNG"] else { return }
         let capture = makeStripedCapture()
@@ -128,6 +185,9 @@ struct AnnotationRendererTests {
             Annotation(shape: .pen([CGPoint(x: 110, y: 60), CGPoint(x: 130, y: 70), CGPoint(x: 150, y: 58),
                                     CGPoint(x: 170, y: 75), CGPoint(x: 190, y: 62)]), color: .green, lineWidth: .thin),
             Annotation(shape: .text("Yakala ✓", origin: CGPoint(x: 112, y: 72)), color: .yellow, lineWidth: .thin),
+            Annotation(shape: .highlight([CGPoint(x: 15, y: 92), CGPoint(x: 95, y: 92)]), color: .yellow, lineWidth: .medium),
+            Annotation(shape: .counter(1, center: CGPoint(x: 100, y: 30)), color: .red, lineWidth: .medium),
+            Annotation(shape: .counter(2, center: CGPoint(x: 180, y: 92)), color: .yellow, lineWidth: .thin),
         ]
         let output = try #require(AnnotationRenderer(capture: capture).renderFlattened(annotations))
         let png = try #require(NSBitmapImageRep(cgImage: output.image).representation(using: .png, properties: [:]))
@@ -162,7 +222,7 @@ private func makeStripedCapture(fill: NSColor? = nil) -> Capture {
 /// Görüntünün piksellerine sol üst orijinle erişim.
 private struct Pixels {
     struct Color {
-        let r: Int, g: Int, b: Int
+        let r: Int, g: Int, b: Int, a: Int
         var isRed: Bool { r > 200 && g < 120 && b < 120 }
         var isGreen: Bool { g > 200 && r < 60 && b < 60 }
     }
@@ -186,6 +246,6 @@ private struct Pixels {
     /// Bellekteki ilk satır görüntünün en üst satırıdır.
     subscript(x: Int, y: Int) -> Color {
         let i = (y * width + x) * 4
-        return Color(r: Int(data[i]), g: Int(data[i + 1]), b: Int(data[i + 2]))
+        return Color(r: Int(data[i]), g: Int(data[i + 1]), b: Int(data[i + 2]), a: Int(data[i + 3]))
     }
 }

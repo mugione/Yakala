@@ -116,24 +116,33 @@ final class CanvasView: NSView, NSTextFieldDelegate {
 
     private func drawContents(in context: CGContext) {
         let rect = imageRect
-        // Ekranda köşeler yuvarlatılır; kaydedilen görüntü kare köşeli kalır.
-        let radius = min(10, rect.width / 2, rect.height / 2)
-        let rounded = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        let shadow = NSColor.black.withAlphaComponent(0.28).cgColor
 
         context.saveGState()
-        context.setShadow(offset: .zero, blur: 24, color: NSColor.black.withAlphaComponent(0.28).cgColor)
-        context.addPath(rounded)
-        context.setFillColor(NSColor.black.cgColor)
-        context.fillPath()
-        context.restoreGState()
-
-        context.saveGState()
-        context.addPath(rounded)
-        context.clip()
+        if model.capture.hasTransparency {
+            // Pencere görüntüsü: köşeleri zaten saydam ve yuvarlak; gölgeyi görüntünün kendi şekli düşürür.
+            context.setShadow(offset: .zero, blur: 24, color: shadow)
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+        } else {
+            // Ekranda köşeler yuvarlatılır; kaydedilen görüntü kare köşeli kalır.
+            let radius = min(10, rect.width / 2, rect.height / 2)
+            let rounded = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+            context.saveGState()
+            context.setShadow(offset: .zero, blur: 24, color: shadow)
+            context.addPath(rounded)
+            context.setFillColor(NSColor.black.cgColor)
+            context.fillPath()
+            context.restoreGState()
+            context.addPath(rounded)
+            context.clip()
+        }
         context.translateBy(x: rect.minX, y: rect.minY)
         context.scaleBy(x: zoom, y: zoom)
         context.interpolationQuality = .high
         model.renderer.draw(model.visibleAnnotations, in: context)
+        if model.capture.hasTransparency {
+            context.endTransparencyLayer()
+        }
         context.restoreGState()
 
         if let selected = model.selectedAnnotation, selected.id != model.editingTextID {
@@ -222,6 +231,19 @@ final class CanvasView: NSView, NSTextFieldDelegate {
             guard let draft = model.draft, case .pen(var points) = draft.shape else { return }
             points.append(point)
             model.draft?.shape = .pen(points)
+        case .highlighter:
+            guard let draft = model.draft, case .highlight(var points) = draft.shape else { return }
+            if event.modifierFlags.contains(.shift) {
+                // Shift: yazının altını çizer gibi düz çizgi.
+                points = [start, CGPoint(x: point.x, y: start.y)]
+            } else {
+                points.append(point)
+            }
+            model.draft?.shape = .highlight(points)
+        case .counter:
+            // Numara bırakılmadan önce sürüklenerek yerine oturtulabilir.
+            guard let draft = model.draft, case let .counter(number, _) = draft.shape else { return }
+            model.draft?.shape = .counter(number, center: point)
         case .text:
             break
         default:
@@ -251,6 +273,8 @@ final class CanvasView: NSView, NSTextFieldDelegate {
         case .rectangle: shape = .rectangle(CGRect(corner: start, end))
         case .ellipse: shape = .ellipse(CGRect(corner: start, end))
         case .pen: shape = .pen([start])
+        case .highlighter: shape = .highlight([start])
+        case .counter: shape = .counter(model.nextCounterNumber, center: end)
         case .blur: shape = .blur(CGRect(corner: start, end))
         case .pixelate: shape = .pixelate(CGRect(corner: start, end))
         case .select, .text: return nil
