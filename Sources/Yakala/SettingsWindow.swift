@@ -81,140 +81,174 @@ private struct SettingsView: View {
     let settings: AppSettings
 
     var body: some View {
+        TabView {
+            general.tabItem { Label("Genel", systemImage: "gearshape") }
+            shortcuts.tabItem { Label("Kısayollar", systemImage: "command") }
+            saving.tabItem { Label("Kaydetme", systemImage: "folder") }
+            about.tabItem { Label("Hakkında", systemImage: "info.circle") }
+        }
+        .tint(Brand.accent)
+        .frame(width: 560, height: 470)
+    }
+
+    // MARK: - Genel
+
+    private var general: some View {
         Form {
-            LabeledContent("Genel:") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Toggle("Mac açılınca Yakala'yı başlat", isOn: Binding(
-                        get: { settings.launchAtLogin },
-                        set: { settings.setLaunchAtLogin($0) }
-                    ))
-                    if settings.launchAtLoginStatus == .requiresApproval {
-                        Text("macOS onayı bekleniyor: Sistem Ayarları › Genel › Giriş Öğeleri bölümünden Yakala'yı aç.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+            Section {
+                Toggle("Mac açılınca Yakala'yı başlat", isOn: Binding(
+                    get: { settings.launchAtLogin },
+                    set: { settings.setLaunchAtLogin($0) }
+                ))
+                if settings.launchAtLoginStatus == .requiresApproval {
+                    LabeledContent {
                         Button("Giriş Öğelerini Aç") {
                             SMAppService.openSystemSettingsLoginItems()
                         }
-                    }
-                    if let error = settings.launchAtLoginError {
-                        Text(error)
-                            .font(.callout)
-                            .foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-            .padding(.bottom, 12)
-
-            LabeledContent("Yakaladıktan sonra:") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Picker("Yakaladıktan sonra", selection: Binding(
-                        get: { settings.afterCapture },
-                        set: { settings.setAfterCapture($0) }
-                    )) {
-                        ForEach(AppSettings.AfterCapture.allCases) { option in
-                            Text(option.title).tag(option)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                    Text("Hızlı mod: kopyala ya da kaydet seçiliyse düzenleyici açılmaz. Son görüntüyü yine de menüden açıp düzenleyebilirsin.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.bottom, 12)
-
-            LabeledContent("Kısayollar:") {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Alan seç").frame(width: 90, alignment: .leading)
-                        ShortcutRecorder(shortcut: settings.areaShortcut) { settings.setShortcut($0, for: .area) }
-                    }
-                    HStack {
-                        Text("Pencere seç").frame(width: 90, alignment: .leading)
-                        ShortcutRecorder(shortcut: settings.windowShortcut) { settings.setShortcut($0, for: .window) }
-                    }
-                    if let error = settings.shortcutError {
-                        Text(error)
-                            .font(.callout)
-                            .foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Değiştirmek için kısayola tıkla ve yeni tuşlara bas; en az bir ⌘, ⌥ ya da ⌃ içermeli. Vazgeçmek için Esc.")
-                            .font(.callout)
+                    } label: {
+                        Text("macOS onayı bekleniyor: Sistem Ayarları › Genel › Giriş Öğeleri bölümünden Yakala'yı aç.")
                             .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button("Varsayılan") { settings.resetShortcuts() }
-                            .help("⇧⌘2 ve ⇧⌘1'e dön")
                     }
                 }
+                if let error = settings.launchAtLoginError {
+                    Text(error).foregroundStyle(.red)
+                }
             }
-            .padding(.bottom, 12)
 
-            LabeledContent("Kayıt klasörü:") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label(displayPath(settings.saveFolder), systemImage: "folder")
+            Section {
+                Picker("Yakaladıktan sonra", selection: Binding(
+                    get: { settings.afterCapture },
+                    set: { settings.setAfterCapture($0) }
+                )) {
+                    ForEach(AppSettings.AfterCapture.allCases) { option in
+                        Text(option.title).tag(option)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+            } header: {
+                Text("Yakaladıktan sonra")
+            } footer: {
+                footnote("""
+                    Hızlı mod: kopyala ya da kaydet seçiliyse düzenleyici açılmaz. Son görüntüyü yine de menüden açıp \
+                    düzenleyebilirsin.
+                    """)
+            }
+
+            Section {
+                LabeledContent("Alan seçmek için", value: settings.areaShortcut.display)
+            } header: {
+                Text("Menü çubuğu")
+            } footer: {
+                footnote("""
+                    Kısayol, menü çubuğu simgesi görünmese de çalışır. Simge görünmüyorsa menü çubuğu dolu olabilir; ⌘ \
+                    tuşunu basılı tutarak başka simgeleri dışarı sürükle ya da Sistem Ayarları › Menü Çubuğu'ndan \
+                    gerekmeyenleri kapat. Bu pencereyi Yakala'yı Spotlight'tan yeniden açarak her zaman getirebilirsin.
+                    """)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    // MARK: - Kısayollar
+
+    private var shortcuts: some View {
+        Form {
+            Section {
+                LabeledContent("Alan seç") {
+                    ShortcutRecorder(shortcut: settings.areaShortcut) { settings.setShortcut($0, for: .area) }
+                }
+                LabeledContent("Pencere seç") {
+                    ShortcutRecorder(shortcut: settings.windowShortcut) { settings.setShortcut($0, for: .window) }
+                }
+                if let error = settings.shortcutError {
+                    Text(error).foregroundStyle(.red)
+                }
+            } footer: {
+                footnote("Değiştirmek için kısayola tıkla ve yeni tuşlara bas; en az bir ⌘, ⌥ ya da ⌃ içermeli. Vazgeçmek için Esc.")
+            }
+
+            Section {
+                LabeledContent("Varsayılan kısayollar: ⇧⌘2 ve ⇧⌘1") {
+                    Button("Varsayılana Dön") { settings.resetShortcuts() }
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    // MARK: - Kaydetme
+
+    private var saving: some View {
+        Form {
+            Section {
+                LabeledContent("Kayıt klasörü") {
+                    Label(displayPath(settings.saveFolder), systemImage: "folder.fill")
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .help(settings.saveFolder.path)
+                }
+                LabeledContent {
                     HStack {
                         Button("Değiştir…", action: chooseFolder)
                         Button("Finder'da Aç", action: openFolder)
                     }
-                    Toggle("Her ekran görüntüsünü bu klasöre otomatik kaydet", isOn: Binding(
-                        get: { settings.autoSave },
-                        set: { settings.setAutoSave($0) }
-                    ))
-                    .padding(.top, 4)
-                    Text("""
-                        Açıkken düzenleyicideki Kaydet (⌘S) aynı dosyayı çizimlerle günceller. \
-                        Kapalıyken Kaydet, bu klasörde açılan kaydetme penceresini gösterir.
-                        """)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                } label: {
+                    EmptyView()
                 }
             }
-            .padding(.bottom, 12)
 
-            LabeledContent("Menü çubuğu:") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(settings.areaShortcut.display) ile alan seç: simge görünmese de çalışır.")
-                    Text("""
-                        Simge görünmüyorsa menü çubuğu dolu olabilir; çentikli MacBook'larda soldaki simgeler \
-                        çentiğin arkasında kalır. ⌘ tuşunu basılı tutarak başka simgeleri menü çubuğunun dışına \
-                        sürükle ya da Sistem Ayarları › Menü Çubuğu'ndan gerekmeyenleri kapat. \
-                        Bu pencereyi Yakala'yı Spotlight'tan veya Finder'dan yeniden açarak her zaman getirebilirsin.
-                        """)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.bottom, 12)
-
-            LabeledContent("Hakkında:") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Yakala \(About.version)")
-                    Text(About.summary)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 4) {
-                        Text("Yapımcı:")
-                        Link(About.creatorTitle, destination: About.creatorURL)
-                    }
-                    .font(.callout)
-                }
+            Section {
+                Toggle("Her ekran görüntüsünü bu klasöre otomatik kaydet", isOn: Binding(
+                    get: { settings.autoSave },
+                    set: { settings.setAutoSave($0) }
+                ))
+            } footer: {
+                footnote("""
+                    Açıkken düzenleyicideki Kaydet (⌘S) aynı dosyayı çizimlerle günceller. Kapalıyken Kaydet, bu \
+                    klasörde açılan kaydetme penceresini gösterir.
+                    """)
             }
         }
-        .formStyle(.columns)
+        .formStyle(.grouped)
+    }
+
+    // MARK: - Hakkında
+
+    private var about: some View {
+        VStack(spacing: 14) {
+            Spacer(minLength: 0)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 112, height: 112)
+                .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+            VStack(spacing: 4) {
+                Text("Yakala").font(.system(size: 26, weight: .bold, design: .rounded))
+                Text("Sürüm \(About.version)").foregroundStyle(.secondary)
+            }
+            Text(About.summary)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: 380)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                AboutBadge(symbol: "wifi.slash", text: "İnternet yok")
+                AboutBadge(symbol: "hand.raised.fill", text: "Veri toplamaz")
+                AboutBadge(symbol: "lock.shield.fill", text: "Sandbox'ta")
+            }
+            Link(About.creatorTitle, destination: About.creatorURL)
+                .font(.callout)
+            Spacer(minLength: 0)
+        }
         .padding(24)
-        .frame(width: 520)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func footnote(_ text: String) -> some View {
+        Text(text)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func displayPath(_ url: URL) -> String {
@@ -245,5 +279,20 @@ private struct SettingsView: View {
         } catch {
             NSAlert(error: error).runModal()
         }
+    }
+}
+
+/// Hakkında sekmesindeki küçük güvenlik etiketi.
+private struct AboutBadge: View {
+    let symbol: String
+    let text: String
+
+    var body: some View {
+        Label(text, systemImage: symbol)
+            .font(.caption.weight(.medium))
+            .foregroundStyle(Brand.accent)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Brand.accent.opacity(0.12), in: Capsule())
     }
 }

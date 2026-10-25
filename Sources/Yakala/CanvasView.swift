@@ -192,7 +192,7 @@ final class CanvasView: NSView, NSTextFieldDelegate {
             let outline = NSBezierPath(rect: viewRect(for: selected.bounds).insetBy(dx: -4, dy: -4))
             outline.lineWidth = 1
             outline.setLineDash([4, 3], count: 2, phase: 0)
-            NSColor.controlAccentColor.setStroke()
+            Brand.accentNSColor.setStroke()
             outline.stroke()
         }
     }

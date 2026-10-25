@@ -30,6 +30,8 @@ struct SnapshotTests {
                 .write(to: URL(fileURLWithPath: "\(folder)/guzellestir-cikti.png"))
         }
 
+        try await snapshot(WelcomeWindowController().window, to: "\(folder)/karsilama.png")
+
         let settings = SettingsWindowController()
         try await snapshot(settings.window, to: "\(folder)/ayarlar.png")
     }

@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Son görüntünün düzenleyicisi. Pencere kapansa da tutulur; menüden yeniden açılınca çizimler kaybolmaz.
     private var editorController: EditorWindowController?
     private var settingsController: SettingsWindowController?
+    private var welcomeController: WelcomeWindowController?
     private var isCapturing = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -32,9 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
-            let icon = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Yakala")
-            icon?.isTemplate = true
-            button.image = icon
+            button.image = Brand.menuBarIcon
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -42,6 +41,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         AppSettings.shared.onHotKeysChanged = { [weak self] in self?.registerHotKeys() }
         registerHotKeys()
+
+        if WelcomeWindowController.shouldShow {
+            welcomeController = WelcomeWindowController()
+            welcomeController?.present()
+        }
     }
 
     /// Ayarlardaki kısayolları kaydeder. Ayarlarda yeni kısayol kaydedilirken hiçbirini kaydetmez;

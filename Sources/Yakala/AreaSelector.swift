@@ -287,14 +287,20 @@ private final class SelectionView: NSView {
             return
         }
 
-        NSColor.white.setStroke()
-        let border = NSBezierPath(rect: selection.insetBy(dx: -0.5, dy: -0.5))
-        border.lineWidth = 1
+        // Marka renginde çerçeve, içinde ince beyaz çizgi; köşelerde tutamak gibi kısa kalın çizgiler.
+        Brand.accentNSColor.setStroke()
+        let border = NSBezierPath(rect: selection.insetBy(dx: -1, dy: -1))
+        border.lineWidth = 2
         border.stroke()
+        NSColor.white.withAlphaComponent(0.6).setStroke()
+        let inner = NSBezierPath(rect: selection.insetBy(dx: 0.5, dy: 0.5))
+        inner.lineWidth = 1
+        inner.stroke()
+        drawCorners(of: selection)
 
         let width = Int((selection.width * capture.scale).rounded())
         let height = Int((selection.height * capture.scale).rounded())
-        drawPill("\(width) × \(height)") { size in
+        drawPill("\(width) × \(height)", branded: true) { size in
             // Seçimin sağ altına; ekranın altına taşıyorsa seçimin içine.
             var origin = NSPoint(x: selection.maxX - size.width, y: selection.minY - size.height - 6)
             if origin.y < bounds.minY + 4 { origin.y = selection.minY + 6 }
@@ -319,9 +325,9 @@ private final class SelectionView: NSView {
         dim.fill()
 
         if let hovered {
-            NSColor.controlAccentColor.withAlphaComponent(0.15).setFill()
+            Brand.accentNSColor.withAlphaComponent(0.15).setFill()
             hovered.fill()
-            NSColor.controlAccentColor.setStroke()
+            Brand.accentNSColor.setStroke()
             let border = NSBezierPath(rect: hovered.insetBy(dx: 1.5, dy: 1.5))
             border.lineWidth = 3
             border.stroke()
@@ -336,15 +342,41 @@ private final class SelectionView: NSView {
         }
     }
 
-    /// Yarı saydam siyah, yuvarlak köşeli bir etiket çizer. `origin` etiketin boyutuna göre konumunu verir.
-    private func drawPill(_ text: String, origin: (NSSize) -> NSPoint) {
+    /// Seçimin köşelerine kısa, kalın marka rengi çizgiler.
+    private func drawCorners(of rect: NSRect) {
+        let arm = min(14, rect.width / 3, rect.height / 3)
+        let corners = NSBezierPath()
+        for (corner, dx, dy) in [(NSPoint(x: rect.minX, y: rect.minY), arm, arm), (NSPoint(x: rect.maxX, y: rect.minY), -arm, arm),
+                                 (NSPoint(x: rect.minX, y: rect.maxY), arm, -arm), (NSPoint(x: rect.maxX, y: rect.maxY), -arm, -arm)] {
+            corners.move(to: NSPoint(x: corner.x, y: corner.y + dy))
+            corners.line(to: corner)
+            corners.line(to: NSPoint(x: corner.x + dx, y: corner.y))
+        }
+        corners.lineWidth = 5
+        corners.lineCapStyle = .round
+        corners.lineJoinStyle = .round
+        Brand.accentNSColor.setStroke()
+        corners.stroke()
+    }
+
+    /// Kapsül biçimli etiket çizer: ipuçları yarı saydam siyah, boyut etiketi marka degradesinde.
+    /// `origin` etiketin boyutuna göre konumunu verir.
+    private func drawPill(_ text: String, branded: Bool = false, origin: (NSSize) -> NSPoint) {
         let string = NSAttributedString(string: text, attributes: Self.labelAttributes)
         let textSize = string.size()
-        let size = NSSize(width: ceil(textSize.width) + 16, height: ceil(textSize.height) + 8)
+        let size = NSSize(width: ceil(textSize.width) + 20, height: ceil(textSize.height) + 10)
         let rect = NSRect(origin: origin(size), size: size)
+        let pill = NSBezierPath(roundedRect: rect, xRadius: size.height / 2, yRadius: size.height / 2)
 
-        NSColor.black.withAlphaComponent(0.75).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
-        string.draw(at: NSPoint(x: rect.minX + 8, y: rect.minY + 4))
+        if branded {
+            NSGradient(starting: Brand.blue, ending: Brand.violet)?.draw(in: pill, angle: 0)
+        } else {
+            NSColor.black.withAlphaComponent(0.72).setFill()
+            pill.fill()
+        }
+        NSColor.white.withAlphaComponent(0.2).setStroke()
+        pill.lineWidth = 1
+        pill.stroke()
+        string.draw(at: NSPoint(x: rect.minX + 10, y: rect.minY + 5))
     }
 }

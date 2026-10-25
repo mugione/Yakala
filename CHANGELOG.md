@@ -8,6 +8,17 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 
 ## [Yayınlanmamış]
 
+### Değişenler
+- **Yeni görünüm:** yeni uygulama simgesi (pencere kartı ve işaret oku) ve ona uyumlu marka renkleri.
+  - Düzenleyici: araçlar gruplara ayrıldı; renk ve kalınlık tek düğmenin açtığı panelde; Kopyala marka renkli
+    ana düğme; görüntünün arkasında noktalı çalışma alanı.
+  - Menü çubuğu simgesi logonun tek renkli hâli oldu.
+  - Ayarlar sekmeli: Genel, Kısayollar, Kaydetme, Hakkında.
+  - Alan seçiminde marka renginde çerçeve, köşe tutamakları ve boyut etiketi.
+
+### Eklenenler
+- İlk açılışta karşılama ekranı: kısayollar ve ekran kaydı iznine tek tıkla geçiş.
+
 ### Düzeltilenler
 - Aynı anda yalnızca bir Yakala çalışır: başka bir kopya (ör. DMG'deki) açılırsa menü çubuğunda ikinci simge
   belirmez, yeni açılan kendini kapatır.

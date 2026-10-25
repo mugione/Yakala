@@ -31,7 +31,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 940, height: 460) // araç çubuğu 13 araçla bu genişliğe sığar
+        window.minSize = NSSize(width: Self.minimumWidth, height: 460)
         super.init(window: window)
         window.delegate = self
 
@@ -47,6 +47,9 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.setContentSize(Self.contentSize(for: capture, layout: layout))
         window.center()
     }
+
+    /// Araç çubuğunun (13 araç, stil düğmesi, geri al) ve alt çubuğun sığdığı en küçük genişlik.
+    static let minimumWidth: CGFloat = 820
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
@@ -91,7 +94,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             (visible.height * 0.75 - chrome.height) / image.height
         )
         return NSSize(
-            width: max(940, image.width * ratio + chrome.width),
+            width: max(minimumWidth, image.width * ratio + chrome.width),
             height: max(460, image.height * ratio + chrome.height)
         )
     }
@@ -115,7 +118,8 @@ private struct EditorView: View {
 
     var body: some View {
         EditorCanvas(model: model, insets: canvasInsets)
-            .background(Color(nsColor: .underPageBackgroundColor))
+            .background(WorkspaceBackground())
+            .tint(Brand.accent)
             .overlay(alignment: .top) {
                 toolbar.padding(.top, layout.titlebarHeight)
             }
@@ -137,51 +141,27 @@ private struct EditorView: View {
 
     // MARK: - Araçlar
 
+    /// Araçlar işlevlerine göre gruplanır: seç | şekiller | yazı | işaretler | gizle.
+    private static let toolGroups: [[Tool]] = [
+        [.select], [.arrow, .rectangle, .ellipse, .pen, .highlighter], [.text, .label],
+        [.counter, .stamp, .magnifier], [.blur, .pixelate],
+    ]
+
     private var toolbar: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 2) {
-                ForEach(Tool.allCases) { tool in
-                    BarButton(isSelected: model.tool == tool,
-                              help: "\(tool.title) (\(tool.shortcut.uppercased()))") {
-                        model.selectTool(tool)
-                    } label: {
-                        if tool == .stamp {
-                            // Damga düğmesi seçili işareti gösterir.
-                            Text(model.stampKind.glyph)
-                                .font(.system(size: 16, weight: .bold))
-                        } else {
-                            Image(systemName: tool.symbol)
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                    }
-                    if tool == .stamp {
-                        StampMenu(model: model)
+        HStack(spacing: 6) {
+            ForEach(Array(Self.toolGroups.enumerated()), id: \.offset) { index, group in
+                if index > 0 {
+                    BarDivider()
+                }
+                HStack(spacing: 2) {
+                    ForEach(group) { tool in
+                        toolButton(tool)
                     }
                 }
             }
 
             BarDivider()
-
-            HStack(spacing: 0) {
-                ForEach(AnnotationColor.allCases) { color in
-                    ColorSwatch(color: color, isSelected: model.color == color) {
-                        model.setColor(color)
-                    }
-                }
-            }
-
-            BarDivider()
-
-            HStack(spacing: 2) {
-                ForEach(LineWidth.allCases) { width in
-                    BarButton(isSelected: model.lineWidth == width, help: width.title) {
-                        model.setLineWidth(width)
-                    } label: {
-                        Circle().frame(width: 2 + width.value * 1.1, height: 2 + width.value * 1.1)
-                    }
-                }
-            }
-
+            StyleButton(model: model)
             BarDivider()
 
             HStack(spacing: 2) {
@@ -205,6 +185,25 @@ private struct EditorView: View {
         .padding(.horizontal, 8)
         .frame(height: layout.barHeight)
         .floatingBar()
+    }
+
+    @ViewBuilder
+    private func toolButton(_ tool: Tool) -> some View {
+        BarButton(isSelected: model.tool == tool, help: "\(tool.title) (\(tool.shortcut.uppercased()))") {
+            model.selectTool(tool)
+        } label: {
+            if tool == .stamp {
+                // Damga düğmesi seçili işareti gösterir.
+                Text(model.stampKind.glyph)
+                    .font(.system(size: 16, weight: .bold))
+            } else {
+                Image(systemName: tool.symbol)
+                    .font(.system(size: 14, weight: .medium))
+            }
+        }
+        if tool == .stamp {
+            StampMenu(model: model)
+        }
     }
 
     // MARK: - Alt çubuk
@@ -233,7 +232,7 @@ private struct EditorView: View {
                             .truncationMode(.middle)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Brand.accent)
                     .help("Finder'da göster: \(savedURL.path)")
                 }
             }
@@ -261,13 +260,6 @@ private struct EditorView: View {
             .floatingButton(prominent: model.isBeautifyOn)
             .help("Arka plan, boşluk, gölge ve çerçeve ekle")
 
-            Button(action: onCopy) {
-                Label("Kopyala", systemImage: "doc.on.doc")
-            }
-            .keyboardShortcut("c")
-            .floatingButton(prominent: false)
-            .help("Panoya kopyala ve pencereyi kapat (⌘C)")
-
             Button {
                 onSave(false)
             } label: {
@@ -275,8 +267,16 @@ private struct EditorView: View {
                 Label(model.savedURL == nil ? "Kaydet…" : "Kaydet", systemImage: "square.and.arrow.down")
             }
             .keyboardShortcut("s")
-            .floatingButton(prominent: true)
+            .floatingButton(prominent: false)
             .help("Kaydet ve pencereyi kapat (⌘S)")
+
+            // Ana eylem en sağda ve marka renginde: çoğu zaman yapılan şey kopyalayıp yapıştırmak.
+            Button(action: onCopy) {
+                Label("Kopyala", systemImage: "doc.on.doc.fill")
+            }
+            .keyboardShortcut("c")
+            .buttonStyle(BrandButtonStyle())
+            .help("Panoya kopyala ve pencereyi kapat (⌘C)")
         }
         .controlSize(.large)
     }
@@ -298,8 +298,13 @@ private struct BarButton<Label: View>: View {
                 .frame(width: 30, height: 30)
                 .foregroundStyle(isSelected ? Color.white : Color.primary)
                 .background {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? Color.accentColor : Color.primary.opacity(isHovered && isEnabled ? 0.08 : 0))
+                    let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    if isSelected {
+                        shape.fill(Brand.gradient)
+                            .shadow(color: Color(nsColor: Brand.violet).opacity(0.35), radius: 4, y: 1.5)
+                    } else {
+                        shape.fill(Color.primary.opacity(isHovered && isEnabled ? 0.08 : 0))
+                    }
                 }
                 .contentShape(Rectangle())
         }
@@ -308,6 +313,83 @@ private struct BarButton<Label: View>: View {
         .onHover { isHovered = $0 }
         .help(help)
         .accessibilityLabel(help)
+    }
+}
+
+/// Renk ve kalınlık: çubukta tek düğme (seçili renk, halkası kalınlığı gösterir), tıklayınca panel açılır.
+private struct StyleButton: View {
+    let model: EditorModel
+    @State private var isOpen = false
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            isOpen.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(Color(nsColor: model.color.nsColor))
+                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.25), lineWidth: 1))
+                    .frame(width: 18, height: 18)
+                Capsule()
+                    .fill(Color.primary.opacity(0.75))
+                    .frame(width: 14, height: max(1.5, model.lineWidth.value * 0.9))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 7)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.primary.opacity(isHovered || isOpen ? 0.08 : 0)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help("Renk ve kalınlık: \(model.color.title), \(model.lineWidth.title)")
+        .accessibilityLabel("Renk ve kalınlık")
+        .popover(isPresented: $isOpen, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Renk").font(.subheadline).foregroundStyle(.secondary)
+                HStack(spacing: 2) {
+                    ForEach(AnnotationColor.allCases) { color in
+                        ColorSwatch(color: color, isSelected: model.color == color) {
+                            model.setColor(color)
+                        }
+                    }
+                }
+                Text("Kalınlık").font(.subheadline).foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    ForEach(LineWidth.allCases) { width in
+                        BarButton(isSelected: model.lineWidth == width, help: width.title) {
+                            model.setLineWidth(width)
+                        } label: {
+                            Capsule().frame(width: 18, height: width.value * 1.1)
+                        }
+                    }
+                }
+            }
+            .padding(14)
+        }
+    }
+}
+
+/// Düzenleyicinin zemini: görüntünün öne çıktığı, hafif noktalı çalışma alanı (açık ve koyu modda).
+private struct WorkspaceBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let dark = colorScheme == .dark
+        Canvas { context, size in
+            let spacing: CGFloat = 18
+            let dot = Path(ellipseIn: CGRect(x: 0, y: 0, width: 1.6, height: 1.6))
+            for x in stride(from: spacing / 2, through: size.width, by: spacing) {
+                for y in stride(from: spacing / 2, through: size.height, by: spacing) {
+                    context.fill(dot.offsetBy(dx: x, dy: y), with: .color(.primary.opacity(dark ? 0.10 : 0.09)))
+                }
+            }
+        }
+        .background(dark ? Color(white: 0.11) : Color(red: 0.94, green: 0.95, blue: 0.97))
     }
 }
 
@@ -323,7 +405,7 @@ private struct ColorSwatch: View {
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.2), lineWidth: 1))
                 .frame(width: 18, height: 18)
                 .padding(3)
-                .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 2).opacity(isSelected ? 1 : 0))
+                .overlay(Circle().strokeBorder(Brand.accent, lineWidth: 2).opacity(isSelected ? 1 : 0))
                 .frame(width: 26, height: 30)
                 .contentShape(Rectangle())
         }
@@ -419,7 +501,7 @@ private struct BackgroundSwatch: View {
                 .frame(width: 44, height: 44)
                 .padding(2)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color.accentColor, lineWidth: 2.5).opacity(isSelected ? 1 : 0))
+                    .strokeBorder(Brand.accent, lineWidth: 2.5).opacity(isSelected ? 1 : 0))
         }
         .buttonStyle(.plain)
         .help(background.title)
