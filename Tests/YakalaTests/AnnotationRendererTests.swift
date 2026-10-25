@@ -277,6 +277,9 @@ struct AnnotationRendererTests {
         // Sol üst köşe: Yakala renk geçişinin mor ucu.
         let corner = pixels[2, 2]
         #expect(corner.b > 200 && corner.r > 80 && corner.g < 120)
+        // Kare olmayan görüntüde öbür iki köşe de boyalı (saydam kalmamalı).
+        #expect(pixels[output.image.width - 3, 2].a == 255)
+        #expect(pixels[2, output.image.height - 3].a == 255)
         // Görüntünün sol üstündeki yeşil işaret, boşluk kadar içeride.
         #expect(pixels[Int(layout.imageRect.minX * 2) + 38, Int(layout.imageRect.minY * 2) + 18].isGreen)
     }

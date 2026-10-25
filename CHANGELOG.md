@@ -16,6 +16,9 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
   - Ayarlar sekmeli: Genel, Kısayollar, Kaydetme, Hakkında.
   - Alan seçiminde marka renginde çerçeve, köşe tutamakları ve boyut etiketi.
 
+### Düzeltilenler
+- Güzelleştir: kare olmayan görüntülerde degrade arka planın iki köşesi boş (saydam) kalıyordu.
+
 ### Eklenenler
 - İlk açılışta karşılama ekranı: kısayollar ve ekran kaydı iznine tek tıkla geçiş.
 

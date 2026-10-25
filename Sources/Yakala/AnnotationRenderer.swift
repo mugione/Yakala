@@ -45,7 +45,9 @@ final class AnnotationRenderer {
         if colors.count == 2,
            let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors as CFArray,
                                      locations: [0, 1]) {
-            context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: canvas.maxX, y: canvas.maxY), options: [])
+            // Degrade köşegen boyunca uzanır; diğer iki köşe de boyansın diye uçlardan dışarı taşar.
+            context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: canvas.maxX, y: canvas.maxY),
+                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
         }
 
         let shadowColor = NSColor.black.withAlphaComponent(0.55 * settings.shadow).cgColor

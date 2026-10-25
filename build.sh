@@ -10,14 +10,17 @@
 #                           Gerekenler: Xcode'da "Developer ID Application" sertifikası ve bir kez
 #                           "xcrun notarytool store-credentials yakala-notary --team-id <TEAM_ID>"
 #                           (profil adı NOTARY_PROFILE ile değiştirilebilir)
+#   ./build.sh --appstore → Mac App Store'a yüklenecek imzalı kurulum paketini üretir: build/Yakala-<sürüm>-AppStore.pkg
+#                           Gerekenler: "Apple Distribution" ve "Mac Installer Distribution" sertifikaları ve
+#                           Support/AppStore.provisionprofile (APPSTORE_PROFILE ile başka bir yol verilebilir)
 set -euo pipefail
 cd "$(dirname "$0")"
 
 MODE="${1:-}"
 case "$MODE" in
-  "" | --open | --install | --dmg | --release) ;;
+  "" | --open | --install | --dmg | --release | --appstore) ;;
   *)
-    echo "Bilinmeyen seçenek: $MODE (kullanım: ./build.sh [--open | --install | --dmg | --release])" >&2
+    echo "Bilinmeyen seçenek: $MODE (kullanım: ./build.sh [--open | --install | --dmg | --release | --appstore])" >&2
     exit 1
     ;;
 esac
@@ -45,6 +48,33 @@ if [[ "$MODE" == --release ]]; then
     exit 1
   fi
   codesign --force --options runtime --timestamp --entitlements Support/Yakala.entitlements --sign "$IDENTITY" "$APP"
+elif [[ "$MODE" == --appstore ]]; then
+  IDENTITY="${SIGN_IDENTITY:-$(find_identity "Apple Distribution")}"
+  INSTALLER_IDENTITY="$(security find-identity -v | awk -F'"' '$2 ~ /(Mac Installer Distribution|3rd Party Mac Developer Installer)/ { split($1, f, " "); print f[2]; exit }')"
+  PROFILE="${APPSTORE_PROFILE:-Support/AppStore.provisionprofile}"
+  for need in "Apple Distribution:$IDENTITY" "Mac Installer Distribution:$INSTALLER_IDENTITY"; do
+    if [[ -z "${need#*:}" ]]; then
+      echo "Durduruldu: \"${need%%:*}\" sertifikası bulunamadı (Xcode › Settings › Accounts › Manage Certificates)." >&2
+      exit 1
+    fi
+  done
+  if [[ ! -f "$PROFILE" ]]; then
+    echo "Durduruldu: $PROFILE yok. developer.apple.com › Profiles'tan Mac App Store profilini indirip buraya koy." >&2
+    exit 1
+  fi
+  # App Store, profili uygulamanın içinde ve profildeki kimlikleri yetkilerde ister.
+  cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+  PROFILE_PLIST="$(mktemp)"
+  security cms -D -i "$PROFILE" > "$PROFILE_PLIST"
+  TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$PROFILE_PLIST")"
+  APP_ID="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$PROFILE_PLIST")"
+  rm -f "$PROFILE_PLIST"
+  ENTITLEMENTS="$(mktemp).entitlements"
+  cp Support/Yakala.entitlements "$ENTITLEMENTS"
+  /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $APP_ID" \
+    -c "Add :com.apple.developer.team-identifier string $TEAM_ID" "$ENTITLEMENTS"
+  codesign --force --options runtime --timestamp --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP"
+  rm -f "$ENTITLEMENTS"
 else
   IDENTITY="${SIGN_IDENTITY:-$(find_identity "Apple Development")}"
   codesign --force --options runtime --entitlements Support/Yakala.entitlements --sign "${IDENTITY:--}" "$APP"
@@ -91,6 +121,13 @@ case "$MODE" in
     /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$PWD/$APP" 2>/dev/null || true
     echo "Kuruldu: $DEST"
     open "$DEST"
+    ;;
+  --appstore)
+    VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)"
+    PKG="build/Yakala-$VERSION-AppStore.pkg"
+    rm -f "$PKG"
+    productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" "$PKG"
+    echo "App Store paketi: $PKG (Transporter uygulamasıyla yükle; her yüklemede CFBundleVersion artmalı)"
     ;;
   --dmg | --release)
     # Açılınca Yakala ve Uygulamalar klasörünü yan yana gösteren disk görüntüsü;
