@@ -8,6 +8,17 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 
 ## [Yayınlanmamış]
 
+## [1.4.1] - 2026-10-25
+
+### Güvenlik
+- Yakala artık **Apple Developer ID ile imzalı ve Apple tarafından noterlenmiş** olarak dağıtılır
+  (Team ID `H86X88P8FK`). İlk açılıştaki "Yakala açılamadı" uyarısı ve "Yine de Aç" adımı kalktı.
+- DMG de imzalı; noter onayı DMG'ye iliştirildiği için internet olmadan da doğrulanır.
+
+### Değişenler
+- Uygulamanın içeriği 1.4 ile aynı. İmza değiştiği için güncellemeden sonra ekran kaydı izni bir kez daha
+  verilmeli; sonraki imzalı sürümlerde izin korunur.
+
 ## [1.4] - 2026-10-24
 
 ### Eklenenler
@@ -79,7 +90,8 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 - Ayarlar: Mac açılınca başlatma, kayıt klasörü, otomatik kayıt.
 - Hakkında paneli, uygulama simgesi ve tek dosyalık DMG kurulumu.
 
-[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.4...HEAD
+[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/mugione/Yakala/releases/tag/v1.4.1
 [1.4]: https://github.com/mugione/Yakala/releases/tag/v1.4
 [1.3]: https://github.com/mugione/Yakala/releases/tag/v1.3
 [1.2]: https://github.com/mugione/Yakala/releases/tag/v1.2

@@ -7,8 +7,8 @@ Güvenlik düzeltmeleri yalnızca en son sürüme yapılır. Lütfen her zaman
 
 | Sürüm | Destek |
 |---|---|
-| 1.4 | ✅ |
-| 1.0 – 1.3 | ❌ (1.4'e güncelleyin) |
+| 1.4.1 | ✅ |
+| 1.0 – 1.4 | ❌ (1.4.1'e güncelleyin) |
 
 ## Güvenlik açığı bildirmek
 
@@ -33,8 +33,8 @@ notlarında teşekkürle anılır.
   ([`ScreenCapturer.swift`](Sources/Yakala/ScreenCapturer.swift)).
 - **Veri toplama:** Yok. Analiz, çökme raporu ya da kullanım verisi gönderilmez.
 - **Bağımlılıklar:** Yok. Yalnızca Apple'ın sistem çerçeveleri kullanılır.
-- **Kod imzası:** Uygulama şu an Apple Developer ID ile imzalı ve notarize değildir; bu yüzden ilk
-  açılışta macOS uyarı gösterir. Her sürümün DMG'si için bir SHA-256 özeti yayımlanır.
+- **Kod imzası:** 1.4.1'den itibaren uygulama ve DMG Apple Developer ID ile imzalanır (Team ID
+  `H86X88P8FK`) ve Apple tarafından noterlenir. Her sürümün DMG'si için bir SHA-256 özeti de yayımlanır.
 
 ---
 
@@ -45,4 +45,5 @@ issues: use **Security › Report a vulnerability** on the repository page, or o
 "Security: contact" without details and we will reach out privately.
 
 Yakala runs in the macOS **App Sandbox without any network entitlement**, has no third-party
-dependencies and collects no data. See [`Support/Yakala.entitlements`](Support/Yakala.entitlements).
+dependencies and collects no data. Since 1.4.1 releases are signed with a Developer ID (Team ID
+`H86X88P8FK`) and notarized by Apple. See [`Support/Yakala.entitlements`](Support/Yakala.entitlements).

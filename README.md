@@ -57,6 +57,11 @@
 
 ## Son yenilikler
 
+**[1.4.1](https://github.com/mugione/Yakala/releases/tag/v1.4.1)** (25 Ekim 2026)
+
+- 🛡️ **Apple imzalı ve noterli:** Yakala artık Developer ID ile imzalanıyor ve Apple tarafından noterleniyor.
+  İlk açılıştaki "Yakala açılamadı" uyarısı ve "Yine de Aç" adımı kalktı.
+
 **[1.4](https://github.com/mugione/Yakala/releases/tag/v1.4)** (24 Ekim 2026)
 
 - ✨ **Güzelleştir:** Düzenleyicinin altındaki düğmeyle sağda bir panel açılır. 8 hazır arka plan
@@ -72,22 +77,21 @@ Tüm sürümlerin değişiklikleri: **[CHANGELOG.md](CHANGELOG.md)**
 1. [Son sürümü](https://github.com/mugione/Yakala/releases/latest) aç ve **`Yakala-<sürüm>.dmg`** dosyasını indir.
 2. DMG'yi aç ve **Yakala**'yı yanındaki **Uygulamalar** klasörüne sürükle.
 3. Yakala'yı **Uygulamalar** klasöründen aç.
-4. İlk açılışta macOS iki kez izin ister: önce uygulamayı açmak, sonra ekranı yakalamak için. İkisi de
-   **bir kerelik**; nasıl verileceği hemen aşağıda adım adım anlatılıyor: [Güvenlik izinleri](#güvenlik-izinleri).
+4. İlk kez **⇧⌘2**'ye bastığında macOS ekran kaydı izni ister; **bir kerelik**. Nasıl verileceği hemen
+   aşağıda adım adım anlatılıyor: [Güvenlik izinleri](#güvenlik-izinleri).
 
 **Gereksinim:** macOS 14 Sonoma veya üzeri.
 
 ## Güvenlik izinleri
 
 > [!NOTE]
-> **Bu uyarı neden çıkıyor?** Yakala ücretsiz ve açık kaynak. Apple'ın ücretli geliştirici imzasıyla
-> (Developer ID) imzalanmadığı için macOS onu tanımıyor ve ilk açılışta durduruyor. Bu, uygulamanın zararlı
-> olduğu anlamına gelmez: kodun tamamı bu depoda ve ne yapıp ne yapmadığını
-> [kendin doğrulayabilirsin](#güvenlik-ve-gizlilik).
+> 1.4.1'den itibaren Yakala **Apple Developer ID ile imzalı ve Apple tarafından noterlenmiştir**: macOS onu
+> tanır ve çift tıklayınca açılır. Gereken tek izin ekran kaydı izni.
 
-### 1. "Yakala açılamadı" uyarısı
+### 1. "Yakala açılamadı" uyarısı (yalnızca 1.4 ve öncesi)
 
-Açarken güvenlik uyarısı alırsan **Sistem Ayarları → Gizlilik ve Güvenlik** bölümüne gir:
+1.4 ve önceki sürümler imzasızdı; macOS ilk açılışta onları durdurur. En kolayı en son sürümü indirmek.
+Eski bir sürümü açman gerekiyorsa **Sistem Ayarları → Gizlilik ve Güvenlik** bölümüne gir:
 
 1. Uyarı penceresinde **Bitti**'ye tıkla. ⚠️ **Çöp Sepetine Taşı**'ya basma.
 2. Ekranın sol üst köşesindeki **Apple menüsünden** **Sistem Ayarları**'nı aç.
@@ -154,18 +158,27 @@ hepsini kendin doğrulayabilirsin.
 codesign -d --entitlements - /Applications/Yakala.app
 ```
 
+**Apple'ın onayı.** İlk komut `source=Notarized Developer ID` yazmalı; ikincisinde `TeamIdentifier=H86X88P8FK` görünmeli:
+
+```bash
+spctl -a -vv /Applications/Yakala.app
+```
+
+```bash
+codesign -dv /Applications/Yakala.app 2>&1 | grep TeamIdentifier
+```
+
 **İndirdiğin DMG'nin değiştirilmediği.** Sürüm sayfasındaki `.sha256` dosyasını DMG ile aynı klasöre indir:
 
 ```bash
-shasum -a 256 -c Yakala-1.4.dmg.sha256
+shasum -a 256 -c Yakala-1.4.1.dmg.sha256
 ```
 
-`Yakala-1.4.dmg: OK` görmelisin.
+`Yakala-1.4.1.dmg: OK` görmelisin.
 
 **Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
 
-Uygulama şu an Apple Developer ID ile imzalı değil; ilk açılıştaki uyarının nedeni bu
-([Güvenlik izinleri](#güvenlik-izinleri)). Bir güvenlik açığı bulursan lütfen [SECURITY.md](SECURITY.md)'deki adımları izle.
+Bir güvenlik açığı bulursan lütfen [SECURITY.md](SECURITY.md)'deki adımları izle.
 
 ## Kullanım
 
@@ -278,6 +291,7 @@ cd Yakala
 | `./build.sh --open` | Derler ve proje klasöründen açar |
 | `./build.sh --install` | Derler ve `/Applications`'a kurar (önceki Yakala kurulumunu günceller) |
 | `./build.sh --dmg` | Derler ve dağıtılabilir `build/Yakala-<sürüm>.dmg` üretir |
+| `./build.sh --release` | `--dmg` gibi, ama Developer ID ile imzalar ve Apple'a noterletir (sertifika ve `notarytool` profili gerekir) |
 | `swift test` | Testleri çalıştırır |
 
 Kodu Xcode'da düzenlemek için `Package.swift` dosyasını Xcode ile aç.
@@ -319,7 +333,8 @@ Kodu Xcode'da düzenlemek için `Package.swift` dosyasını Xcode ile aç.
 1. `Support/Info.plist` içinde `CFBundleShortVersionString` (ör. `1.5`) ve `CFBundleVersion` değerlerini artır.
 2. [CHANGELOG.md](CHANGELOG.md)'de "Yayınlanmamış" altındaki maddeleri yeni sürümün başlığına taşı;
    README'deki **Son yenilikler** bölümünü ve SECURITY.md'deki desteklenen sürümü güncelle.
-3. `./build.sh --dmg` çalıştır. `build/` klasöründe DMG ve yanında `.sha256` özeti oluşur.
+3. `./build.sh --release` çalıştır. Uygulama Developer ID ile imzalanır, Apple'a noterletilir (birkaç dakika),
+   onay DMG'ye iliştirilir; `build/` klasöründe DMG ve yanında `.sha256` özeti oluşur.
 4. GitHub'da **Releases › Draft a new release**: etiket `v1.5`, `build/Yakala-1.5.dmg` ve
    `build/Yakala-1.5.dmg.sha256` dosyalarını ekle. Açıklamaya CHANGELOG'daki o sürümün bölümünü yapıştır.
 
@@ -358,9 +373,8 @@ It lives in the menu bar; the interface is in Turkish.
 [▶ watch](https://cdn.jsdelivr.net/gh/mugione/Yakala@main/docs/yakala-tanitim.mp4).
 
 **Install:** download the latest `.dmg` from [Releases](https://github.com/mugione/Yakala/releases/latest)
-and drag Yakala to Applications. Because the app is not signed with a paid Developer ID, macOS will block the
-first launch: open **System Settings › Privacy & Security** and click **Open Anyway**. Then allow
-**Screen Recording** when asked. Requires macOS 14 or later.
+and drag Yakala to Applications. Since 1.4.1 the app is signed with a Developer ID and notarized by Apple, so it
+opens normally; just allow **Screen Recording** when asked. Requires macOS 14 or later.
 
 **Build from source** (Xcode 26+): `git clone https://github.com/mugione/Yakala.git && cd Yakala && ./build.sh --install`
 
