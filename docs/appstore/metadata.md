@@ -22,9 +22,10 @@ Apple'ın karakter sınırları; tüm metinler sınırların içinde.
 
 ## Türkçe (birincil dil)
 
-**Ad** (30): `Yakala`
+**Ad** (30): `Yakala – Ekran Görüntüsü`  
+("Yakala" App Store'da başka bir uygulamada kullanılıyor; Mac'te uygulamanın adı yine "Yakala".)
 
-**Alt başlık** (30): `Ekran görüntüsü al ve işaretle`
+**Alt başlık** (30): `İşaretle, gizle ve paylaş`
 
 **Tanıtım metni** (170):
 
@@ -83,9 +84,9 @@ Kısayolları Ayarlar'dan değiştirebilirsin. macOS 14 Sonoma ve sonrasında ç
 
 ## English
 
-**Name** (30): `Yakala`
+**Name** (30): `Yakala – Screenshot & Markup`
 
-**Subtitle** (30): `Capture, annotate and share`
+**Subtitle** (30): `Annotate, redact and share`
 
 **Promotional text** (170):
 
