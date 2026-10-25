@@ -64,6 +64,8 @@ elif [[ "$MODE" == --appstore ]]; then
   fi
   # App Store, profili uygulamanın içinde ve profildeki kimlikleri yetkilerde ister.
   cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+  # İndirilen profil karantina işareti taşır; App Store paketin içinde hiçbir genişletilmiş özellik istemez.
+  xattr -cr "$APP"
   PROFILE_PLIST="$(mktemp)"
   security cms -D -i "$PROFILE" > "$PROFILE_PLIST"
   TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$PROFILE_PLIST")"
