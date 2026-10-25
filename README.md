@@ -57,6 +57,11 @@
 
 ## Son yenilikler
 
+**[1.5](https://github.com/mugione/Yakala/releases/tag/v1.5)** (25 Ekim 2026)
+
+- 🎨 **Yeni görünüm:** yeni simge, gruplu araç çubuğu, sekmeli ayarlar ve ilk açılışta karşılama ekranı.
+- 🐞 Aynı anda tek Yakala çalışır; Güzelleştir'in köşe hatası düzeltildi.
+
 **[1.4.1](https://github.com/mugione/Yakala/releases/tag/v1.4.1)** (25 Ekim 2026)
 
 - 🛡️ **Apple imzalı ve noterli:** Yakala artık Developer ID ile imzalanıyor ve Apple tarafından noterleniyor.
@@ -171,10 +176,10 @@ codesign -dv /Applications/Yakala.app 2>&1 | grep TeamIdentifier
 **İndirdiğin DMG'nin değiştirilmediği.** Sürüm sayfasındaki `.sha256` dosyasını DMG ile aynı klasöre indir:
 
 ```bash
-shasum -a 256 -c Yakala-1.4.1.dmg.sha256
+shasum -a 256 -c Yakala-1.5.dmg.sha256
 ```
 
-`Yakala-1.4.1.dmg: OK` görmelisin.
+`Yakala-1.5.dmg: OK` görmelisin.
 
 **Hiç güvenmek zorunda kalmadan.** DMG yerine Yakala'yı [kaynaktan kendin derleyebilirsin](#kaynaktan-derleme).
 

@@ -7,8 +7,8 @@ Güvenlik düzeltmeleri yalnızca en son sürüme yapılır. Lütfen her zaman
 
 | Sürüm | Destek |
 |---|---|
-| 1.4.1 | ✅ |
-| 1.0 – 1.4 | ❌ (1.4.1'e güncelleyin) |
+| 1.5 | ✅ |
+| 1.0 – 1.4.1 | ❌ (1.5'e güncelleyin) |
 
 ## Güvenlik açığı bildirmek
 

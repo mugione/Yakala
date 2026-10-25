@@ -8,6 +8,8 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 
 ## [Yayınlanmamış]
 
+## [1.5] - 2026-10-25
+
 ### Değişenler
 - **Yeni görünüm:** yeni uygulama simgesi (pencere kartı ve işaret oku) ve ona uyumlu marka renkleri.
   - Düzenleyici: araçlar gruplara ayrıldı; renk ve kalınlık tek düğmenin açtığı panelde; Kopyala marka renkli
@@ -16,15 +18,14 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
   - Ayarlar sekmeli: Genel, Kısayollar, Kaydetme, Hakkında.
   - Alan seçiminde marka renginde çerçeve, köşe tutamakları ve boyut etiketi.
 
-### Düzeltilenler
-- Güzelleştir: kare olmayan görüntülerde degrade arka planın iki köşesi boş (saydam) kalıyordu.
-
 ### Eklenenler
 - İlk açılışta karşılama ekranı: kısayollar ve ekran kaydı iznine tek tıkla geçiş.
+- Mac App Store hazırlığı: gizlilik politikası ([PRIVACY.md](PRIVACY.md)) ve `./build.sh --appstore`.
 
 ### Düzeltilenler
 - Aynı anda yalnızca bir Yakala çalışır: başka bir kopya (ör. DMG'deki) açılırsa menü çubuğunda ikinci simge
   belirmez, yeni açılan kendini kapatır.
+- Güzelleştir: kare olmayan görüntülerde degrade arka planın iki köşesi boş (saydam) kalıyordu.
 
 ## [1.4.1] - 2026-10-25
 
@@ -108,7 +109,8 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 - Ayarlar: Mac açılınca başlatma, kayıt klasörü, otomatik kayıt.
 - Hakkında paneli, uygulama simgesi ve tek dosyalık DMG kurulumu.
 
-[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.4.1...HEAD
+[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.5...HEAD
+[1.5]: https://github.com/mugione/Yakala/releases/tag/v1.5
 [1.4.1]: https://github.com/mugione/Yakala/releases/tag/v1.4.1
 [1.4]: https://github.com/mugione/Yakala/releases/tag/v1.4
 [1.3]: https://github.com/mugione/Yakala/releases/tag/v1.3
