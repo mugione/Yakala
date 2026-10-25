@@ -8,6 +8,10 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, s�
 
 ## [Yayınlanmamış]
 
+### Düzeltilenler
+- Aynı anda yalnızca bir Yakala çalışır: başka bir kopya (ör. DMG'deki) açılırsa menü çubuğunda ikinci simge
+  belirmez, yeni açılan kendini kapatır.
+
 ## [1.4.1] - 2026-10-25
 
 ### Güvenlik
