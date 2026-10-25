@@ -88,7 +88,9 @@ private struct SettingsView: View {
             about.tabItem { Label("Hakkında", systemImage: "info.circle") }
         }
         .tint(Brand.accent)
-        .frame(width: 560, height: 470)
+        // Sekmeler başlık çubuğuna yapışmasın.
+        .padding(.top, 12)
+        .frame(width: 560, height: 482)
     }
 
     // MARK: - Genel
@@ -231,11 +233,6 @@ private struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 380)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 8) {
-                AboutBadge(symbol: "wifi.slash", text: "İnternet yok")
-                AboutBadge(symbol: "hand.raised.fill", text: "Veri toplamaz")
-                AboutBadge(symbol: "lock.shield.fill", text: "Sandbox'ta")
-            }
             Link(About.creatorTitle, destination: About.creatorURL)
                 .font(.callout)
             Spacer(minLength: 0)
@@ -282,17 +279,3 @@ private struct SettingsView: View {
     }
 }
 
-/// Hakkında sekmesindeki küçük güvenlik etiketi.
-private struct AboutBadge: View {
-    let symbol: String
-    let text: String
-
-    var body: some View {
-        Label(text, systemImage: symbol)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(Brand.accent)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Brand.accent.opacity(0.12), in: Capsule())
-    }
-}
