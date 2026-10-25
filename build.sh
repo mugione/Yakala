@@ -87,6 +87,8 @@ case "$MODE" in
     quit_running_yakala
     rm -rf "$DEST"
     ditto "$APP" "$DEST"
+    # macOS derleme klasöründeki kopyayı ayrı bir uygulama sanıp (ör. "Çık ve Yeniden Aç"ta) onu açmasın.
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$PWD/$APP" 2>/dev/null || true
     echo "Kuruldu: $DEST"
     open "$DEST"
     ;;

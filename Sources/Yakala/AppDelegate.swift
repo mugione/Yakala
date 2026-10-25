@@ -21,6 +21,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var isCapturing = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Başka bir kopya (ör. DMG'deki ya da derleme klasöründeki) zaten çalışıyorsa ikinci simge açılmasın.
+        let me = NSRunningApplication.current
+        if let bundleID = Bundle.main.bundleIdentifier,
+           NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+               .contains(where: { $0.processIdentifier != me.processIdentifier && !$0.isTerminated }) {
+            NSApp.terminate(nil)
+            return
+        }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
             let icon = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Yakala")
