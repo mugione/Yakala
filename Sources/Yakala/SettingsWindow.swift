@@ -11,6 +11,7 @@ final class SettingsWindowController: NSWindowController {
         let window = NSWindow(contentViewController: hosting)
         window.title = "Yakala Ayarları"
         window.styleMask = [.titled, .closable]
+        window.titlebarSeparatorStyle = .none
         window.isReleasedWhenClosed = false
         super.init(window: window)
         window.center()
@@ -80,16 +81,33 @@ private struct ShortcutRecorder: View {
 private struct SettingsView: View {
     let settings: AppSettings
 
+    private enum Page: String, CaseIterable, Identifiable {
+        case general = "Genel", shortcuts = "Kısayollar", saving = "Kaydetme", about = "Hakkında"
+        var id: Self { self }
+    }
+
+    @State private var page = Page.general
+
+    /// Sekmeler kutusuz bir seçiciyle gösterilir; macOS'un TabView'u içeriği gri çerçeveli bir kutuya koyar.
     var body: some View {
-        TabView {
-            general.tabItem { Label("Genel", systemImage: "gearshape") }
-            shortcuts.tabItem { Label("Kısayollar", systemImage: "command") }
-            saving.tabItem { Label("Kaydetme", systemImage: "folder") }
-            about.tabItem { Label("Hakkında", systemImage: "info.circle") }
+        VStack(spacing: 0) {
+            Picker("Bölüm", selection: $page) {
+                ForEach(Page.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            .padding(.top, 12)
+            .padding(.bottom, 4)
+
+            switch page {
+            case .general: general
+            case .shortcuts: shortcuts
+            case .saving: saving
+            case .about: about
+            }
         }
         .tint(Brand.accent)
-        // Sekmeler başlık çubuğuna yapışmasın.
-        .padding(.top, 12)
         .frame(width: 560, height: 482)
     }
 
