@@ -12,7 +12,7 @@ Hello App Review team,
 Thank you for reviewing Yakala. Please find the requested information below. The screen recording is attached.
 
 1. SCREEN RECORDING
-Attached: recorded on a MacBook Pro running the latest macOS. It starts by launching Yakala from the Applications folder and shows the typical flow: the welcome window, granting Screen Recording permission, capturing an area with Shift-Command-2, annotating (arrow, text label, numbered steps, pixelate), Beautify, copying with Command-C and pasting into another app, capturing a single window with Shift-Command-1, and the Settings window.
+Attached: recorded on a MacBook Pro running the latest macOS. It starts by launching Yakala from the Applications folder and shows the typical flow: the menu bar icon and menu, capturing an area with Shift-Command-2, annotating (arrow, text label, numbered steps, pixelate), Beautify, copying with Command-C and pasting into another app, capturing a single window with Shift-Command-1, and the Settings window.
 Yakala has no account registration or login, no user-generated content shared with others, and no paid content or in-app purchases.
 
 2. PURPOSE AND TARGET AUDIENCE
@@ -48,12 +48,11 @@ Murat Gülsen
 Mac'in kendi kayıt aracıyla, gerçek Mac'te, en son macOS'ta. Toplam 1–2 dakika yeterli.
 
 1. Kayda başlamadan önce Yakala'dan çık (menü çubuğu simgesine sağ tık › Çık).
-   Karşılama ekranının videoda görünmesi için Terminal'de bir kez:
-   `defaults delete io.github.mugione.Yakala didShowWelcome`
 2. **⇧⌘5** › alttaki çubukta **Tüm Ekranı Kaydet** › **Kaydet**.
 3. Kayıtta sırayla:
-   1. Finder › Uygulamalar › **Yakala**'ya çift tıkla → karşılama ekranı görünür, **Başla**.
-   2. (İzin zaten verildiyse yeşil onay görünür; verilmediyse **Ekran Kaydı İznini Ver**'i göster.)
+   1. Finder › Uygulamalar › **Yakala**'ya çift tıkla → menü çubuğunda Yakala simgesi belirir; fareyle
+      simgeyi göster. (Karşılama ekranı yalnızca ilk açılışta çıkar; videoda olmaması sorun değil.)
+   2. Menü çubuğu simgesine **sağ tık** → açılan menüyü göster, sonra kapat.
    3. **⇧⌘2** → bir alanı sürükleyerek seç.
    4. Düzenleyicide: bir **ok**, bir **etiket** (L) yaz, iki **numara** (N) koy, bir yeri **pikselleştir** (X).
    5. **Güzelleştir**'e bas, farklı bir arka plan seç, tekrar kapat.
