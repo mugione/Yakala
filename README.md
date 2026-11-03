@@ -10,16 +10,23 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.apple.com/tr/app/id6826798468"><img src="https://img.shields.io/badge/Mac_App_Store-%C4%B0ndir-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="Mac App Store'dan indir" height="40"></a>
+  &nbsp;
+  <a href="https://apps.microsoft.com/detail/9N8WQ5BMC648"><img src="https://img.shields.io/badge/Microsoft_Store-%C4%B0ndir-0078D4?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft Store'dan indir" height="40"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/mugione/Yakala/releases/latest"><img src="https://img.shields.io/github/v/release/mugione/Yakala?label=s%C3%BCr%C3%BCm&color=5b5bf7" alt="Son sürüm"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14 ve üzeri">
+  <img src="https://img.shields.io/badge/Windows-Microsoft_Store-0078D4?logo=microsoft&logoColor=white" alt="Windows: Microsoft Store">
   <img src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" alt="Swift 6">
   <a href="LICENSE"><img src="https://img.shields.io/badge/lisans-MIT-2ea44f" alt="MIT lisansı"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/mugione/Yakala/releases/latest"><b>⬇️ Yakala'yı indir</b></a>
+  <a href="#kurulum"><b>⬇️ Kurulum</b></a>
   &nbsp;·&nbsp;
-  <a href="#kurulum">Kurulum</a>
+  <a href="#ekran-görüntüleri">Ekran görüntüleri</a>
   &nbsp;·&nbsp;
   <a href="#güvenlik-izinleri">Güvenlik izinleri</a>
   &nbsp;·&nbsp;
@@ -39,6 +46,23 @@
 
 ---
 
+## Ekran görüntüleri
+
+<p align="center">
+  <img src="docs/appstore/screenshots/1-isaretle.png" width="820" alt="Düzenleyici: oklar, etiket, numaralı adımlar ve damga ile işaretlenmiş bir satış paneli">
+</p>
+
+<table>
+  <tr>
+    <td><img src="docs/appstore/screenshots/2-gizle.png" alt="E-postalar pikselleştirilmiş, gelir rakamı bulanıklaştırılmış"></td>
+    <td><img src="docs/appstore/screenshots/3-guzellestir.png" alt="Güzelleştir paneli: degrade arka plan, gölge ve pencere çerçevesi"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/appstore/screenshots/4-yakala.png" alt="Alan seçimi: marka renginde çerçeve ve boyut etiketi"></td>
+    <td><img src="docs/appstore/screenshots/5-hazir.png" alt="Ayarlar ve karşılama ekranı"></td>
+  </tr>
+</table>
+
 ## Özellikler
 
 - ⚡ **Tek kısayolla yakala.** **⇧⌘2**'ye bas, ekran donar; fareyle alanı seç. Tek tık tüm ekranı alır.
@@ -56,6 +80,9 @@
 - 🪶 **Hafif ve yerel.** Swift ile yazıldı, Dock'ta yer kaplamaz, menü çubuğunda sessizce bekler. macOS 26 ve sonrasında Liquid Glass görünümüyle.
 
 ## Son yenilikler
+
+**Kasım 2026:** Yakala artık **[Mac App Store](https://apps.apple.com/tr/app/id6826798468)**'da ve Windows için
+**[Microsoft Store](https://apps.microsoft.com/detail/9N8WQ5BMC648)**'da. 🎉
 
 **[1.5](https://github.com/mugione/Yakala/releases/tag/v1.5)** (25 Ekim 2026)
 
@@ -79,13 +106,24 @@ Tüm sürümlerin değişiklikleri: **[CHANGELOG.md](CHANGELOG.md)**
 
 ## Kurulum
 
+### Mac
+
+**Önerilen: [Mac App Store](https://apps.apple.com/tr/app/id6826798468)** › **Al**. Güncellemeler App Store'dan kendiliğinden gelir.
+
+Ya da GitHub'dan (aynı uygulama, Apple imzalı ve noterli DMG):
+
 1. [Son sürümü](https://github.com/mugione/Yakala/releases/latest) aç ve **`Yakala-<sürüm>.dmg`** dosyasını indir.
 2. DMG'yi aç ve **Yakala**'yı yanındaki **Uygulamalar** klasörüne sürükle.
 3. Yakala'yı **Uygulamalar** klasöründen aç.
-4. İlk kez **⇧⌘2**'ye bastığında macOS ekran kaydı izni ister; **bir kerelik**. Nasıl verileceği hemen
-   aşağıda adım adım anlatılıyor: [Güvenlik izinleri](#güvenlik-izinleri).
+
+İki yolda da ilk kez **⇧⌘2**'ye bastığında macOS ekran kaydı izni ister; **bir kerelik**. Nasıl verileceği hemen
+aşağıda adım adım anlatılıyor: [Güvenlik izinleri](#güvenlik-izinleri).
 
 **Gereksinim:** macOS 14 Sonoma veya üzeri.
+
+### Windows
+
+**[Microsoft Store](https://apps.microsoft.com/detail/9N8WQ5BMC648)** › **Yükle**.
 
 ## Güvenlik izinleri
 
@@ -203,7 +241,7 @@ Yakala menü çubuğunda bir simge olarak çalışır; Dock'ta görünmez.
 ### Düzenleyici araçları
 
 <p align="center">
-  <img src="docs/ekran-goruntusu.png" width="720" alt="Yakala düzenleyicisi: üstte araçlar ve renkler, ortada yakalanan görüntü, altta Kopyala ve Kaydet">
+  <img src="docs/appstore/screenshots/1-isaretle.png" width="720" alt="Yakala düzenleyicisi: üstte gruplu araç çubuğu, ortada işaretlenmiş görüntü, altta Güzelleştir, Kaydet ve Kopyala">
 </p>
 
 | Araç | Tuş | İpucu |
@@ -359,7 +397,8 @@ Büyük bir değişiklik düşünüyorsan önce bir issue açıp konuşalım.
 
 ## English
 
-**Yakala** (Turkish for *"capture"*) is a lightweight, open-source screenshot and annotation tool for macOS.
+**Yakala** (Turkish for *"capture"*) is a lightweight, open-source screenshot and annotation tool for macOS,
+also available for Windows.
 It lives in the menu bar; the interface is in Turkish.
 
 - **Capture:** press **⇧⌘2**, drag to select an area (single click for the whole screen), or **⇧⌘1** and click a window.
@@ -377,8 +416,9 @@ It lives in the menu bar; the interface is in Turkish.
 **Demo:** see the animation at the top, or watch the full video with Turkish narration:
 [▶ watch](https://cdn.jsdelivr.net/gh/mugione/Yakala@main/docs/yakala-tanitim.mp4).
 
-**Install:** download the latest `.dmg` from [Releases](https://github.com/mugione/Yakala/releases/latest)
-and drag Yakala to Applications. Since 1.4.1 the app is signed with a Developer ID and notarized by Apple, so it
+**Install:** get Yakala from the **[Mac App Store](https://apps.apple.com/app/id6826798468)** (automatic updates), or for Windows from the
+**[Microsoft Store](https://apps.microsoft.com/detail/9N8WQ5BMC648)**. On the Mac you can also download the latest `.dmg` from
+[Releases](https://github.com/mugione/Yakala/releases/latest) and drag Yakala to Applications. Since 1.4.1 the app is signed with a Developer ID and notarized by Apple, so it
 opens normally; just allow **Screen Recording** when asked. Requires macOS 14 or later.
 
 **Build from source** (Xcode 26+): `git clone https://github.com/mugione/Yakala.git && cd Yakala && ./build.sh --install`
