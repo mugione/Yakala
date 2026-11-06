@@ -1,119 +1,43 @@
-# Değişiklik Günlüğü
+# Değişiklik Günlüğü (Windows)
 
-Yakala'daki tüm önemli değişiklikler bu dosyada, en yeni sürüm en üstte olacak şekilde listelenir.
+Yakala'nın Windows sürümündeki tüm önemli değişiklikler bu dosyada, en yeni sürüm en üstte olacak şekilde listelenir.
 Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) düzenine, sürüm numaraları
-[Anlamsal Sürümleme](https://semver.org/lang/tr/) kurallarına dayanır.
+[Anlamsal Sürümleme](https://semver.org/lang/tr/) kurallarına dayanır. Windows sürümleri `windows-v` önekli
+etiketlerle yayımlanır. macOS sürümünün değişiklikleri: [CHANGELOG.md](https://github.com/mugione/Yakala/blob/main/CHANGELOG.md).
 
-İndirmek için: [Releases](https://github.com/mugione/Yakala/releases)
-
-## [Yayınlanmamış]
-
-## [1.5] - 2026-10-25
-
-### Değişenler
-- **Yeni görünüm:** yeni uygulama simgesi (pencere kartı ve işaret oku) ve ona uyumlu marka renkleri.
-  - Düzenleyici: araçlar gruplara ayrıldı; renk ve kalınlık tek düğmenin açtığı panelde; Kopyala marka renkli
-    ana düğme; görüntünün arkasında noktalı çalışma alanı.
-  - Menü çubuğu simgesi logonun tek renkli hâli oldu.
-  - Ayarlar sekmeli: Genel, Kısayollar, Kaydetme, Hakkında.
-  - Alan seçiminde marka renginde çerçeve, köşe tutamakları ve boyut etiketi.
+## [1.6.0] - 2026-11-06
 
 ### Eklenenler
-- İlk açılışta karşılama ekranı: kısayollar ve ekran kaydı iznine tek tıkla geçiş.
-- Mac App Store hazırlığı: gizlilik politikası ([PRIVACY.md](PRIVACY.md)) ve `./build.sh --appstore`.
+- **PrtScn** tuşu tek başına alan seçimini başlatır (Ayarlar › Kısayollar'dan kapatılabilir). Windows bu tuşu Ekran
+  Alıntısı Aracı'na veriyorsa ayarlarda nasıl değiştirileceği gösterilir.
+- **Zamanlayıcı:** bildirim alanı menüsünden 3, 5 ya da 10 saniye sonra alan seçimi; ekranın altında geri sayım.
+- **Kırp** aracı (C): sürükle ve bırak; şekiller görüntüyle birlikte kayar, Ctrl+Z geri alır.
+- **JPG** kaydetme ve kalite ayarı; **dosya adı şablonu** ({tarih}, {saat}, {yıl}, {ay}, {gün}).
+- **Yakınlaştırma:** Ctrl+tekerlek, Ctrl+0 (sığdır), Ctrl+1 (gerçek boyut), Ctrl+/Ctrl−; alt çubukta yakınlık
+  düğmesi; büyütülmüşken tekerlek ya da orta tuşla kaydırma.
+- **İngilizce arayüz:** Ayarlar › Genel › Arayüz dili (Sistem / Türkçe / English).
 
 ### Düzeltilenler
-- Aynı anda yalnızca bir Yakala çalışır: başka bir kopya (ör. DMG'deki) açılırsa menü çubuğunda ikinci simge
-  belirmez, yeni açılan kendini kapatır.
-- Güzelleştir: kare olmayan görüntülerde degrade arka planın iki köşesi boş (saydam) kalıyordu.
+- %125, %150 ve %175 ölçekli ekranlarda Güzelleştir açıkken kaydedilen ve kopyalanan görüntü yarım piksel kayıp
+  bulanıklaşıyordu; yerleşim artık fiziksel piksellerde hesaplanıyor.
+- Düzenleyicideki önizleme ekran pikseline oturtuluyor; pencere ekranın %85'ine kadar büyüyor.
+- Güzelleştir paneli açılınca pencere ekranda yer varsa panel kadar genişliyor; görüntü panel yüzünden küçülmüyor.
+  Boşluk artık 0'a kadar indirilebiliyor.
+- Yakalama ve düzenleyici kapandıktan sonra bellek toplanıp Windows'a geri veriliyor.
 
-## [1.4.1] - 2026-10-25
+## [1.5.0]
 
-### Güvenlik
-- Yakala artık **Apple Developer ID ile imzalı ve Apple tarafından noterlenmiş** olarak dağıtılır
-  (Team ID `H86X88P8FK`). İlk açılıştaki "Yakala açılamadı" uyarısı ve "Yine de Aç" adımı kalktı.
-- DMG de imzalı; noter onayı DMG'ye iliştirildiği için internet olmadan da doğrulanır.
-
-### Değişenler
-- Uygulamanın içeriği 1.4 ile aynı. İmza değiştiği için güncellemeden sonra ekran kaydı izni bir kez daha
-  verilmeli; sonraki imzalı sürümlerde izin korunur.
-
-## [1.4] - 2026-10-24
+İlk Windows sürümü: macOS 1.5'in tüm özellikleri, aynı Türkçe arayüzle.
 
 ### Eklenenler
-- **Güzelleştir:** Düzenleyicinin altındaki ✨ düğmesi sağda bir panel açar ve görüntüyü renkli bir
-  arka planın ortasına yerleştirir. Kopyala ve Kaydet sonucu bu hâliyle çıkarır.
-  - 8 hazır arka plan: Yakala, Gün batımı, Okyanus, Nane, Şeftali, Gece, Açık gri ve Saydam.
-  - Boşluk, köşe yuvarlaklığı ve gölge kaydırıcıları.
-  - Oranlar: Otomatik, 16:9, 4:3, 1:1; görüntü hep ortada kalır.
-  - İsteğe bağlı macOS pencere çerçevesi (●●●). Pencere yakalamalarında pencerenin kendi şekli kullanılır.
-  - Son seçilen ayarlar hatırlanır.
-
-## [1.3] - 2026-10-24
-
-### Eklenenler
-- **Etiket aracı (`L`):** Yazıyı renkli, yuvarlak köşeli bir kutunun içine koyar; yazı rengi kutuya göre
-  kendiliğinden beyaz ya da siyah olur. Karmaşık ekranlarda da okunur kalır.
-- **Büyüteç (`M`):** Bir bölgeyi yuvarlak bir mercekte 2 kat büyütür. Bulanıklaştırılan ya da
-  pikselleştirilen bölgeler mercekte de gizli kalır.
-- **Damga (`D`):** ✓ ✗ ? ! işaretleri. Tür, düğmenin yanındaki küçük oktan seçilir; renk işarete göre
-  kendiliğinden ayarlanır.
-- **Hızlı mod:** Ayarlar › Yakaladıktan sonra: *Düzenleyiciyi aç*, *Hemen panoya kopyala* ya da
-  *Hemen kayıt klasörüne kaydet*. Hızlı modda son görüntü menüden yine düzenlenebilir.
-- **Kısayolları değiştirme:** Ayarlar › Kısayollar'dan alan ve pencere seçiminin kısayolları
-  değiştirilebilir; çakışan ya da başka uygulamanın kullandığı kısayollar için uyarı gösterilir.
-
-### Değişenler
-- Düzenleyici penceresinin en küçük genişliği, 13 aracın tek satıra sığması için artırıldı.
-- Menüdeki ve menü çubuğu simgesinin ipucundaki kısayollar ayarlara göre gösterilir.
-
-## [1.2] - 2026-10-24
-
-### Eklenenler
-- **Pencere yakalama:** **⇧⌘1**'e bas ve bir pencereye tıkla; alan seçerken **Boşluk** tuşu da pencere
-  seçimine geçer. Pencerenin yuvarlak köşeleri saydam olarak alınır.
-- **Vurgulayıcı (`H`):** Yarı saydam fosforlu kalem; hep diğer şekillerin altında çizilir.
-  Shift ile düz çizgi.
-- **Numara aracı (`N`):** Her tıklamada sıradaki numarayı (①②③) koyar.
-- Menüye **Pencere Seç** eklendi.
-
-### Değişenler
-- **Kaydet (⌘S)** ve **Farklı Kaydet (⇧⌘S)** de Kopyala gibi pencereyi kapatır, "Kaydedildi"
-  bildirimi gösterir ve önceki uygulamaya döner. Kaydetme penceresinde vazgeçilirse düzenleyici açık kalır.
-
-## [1.1] - 2026-10-24
-
-### Güvenlik
-- Yakala artık macOS **App Sandbox**'ında, **ağ izni olmadan** çalışır: internete bağlanamaz.
-  İzinler [`Support/Yakala.entitlements`](Support/Yakala.entitlements) dosyasında.
-- Uygulama, notarization için gereken sertleştirilmiş çalışma ortamıyla (hardened runtime) imzalanır.
-- Her sürümün DMG'si için bir **SHA-256 özeti** (`.sha256`) yayımlanır.
-- [SECURITY.md](SECURITY.md) eklendi: güvenlik açığı bildirme yolu ve güvenlik modeli.
-
-### Değişenler
-- Varsayılan kayıt klasörü gerçek `~/Pictures/Yakala` klasörüdür; seçilen başka bir klasör sandbox'ta
-  güvenli yer imiyle hatırlanır.
-- 1.0'dan güncellerken ekran kaydı izni bir kez daha verilmeli; ayarlar varsayılana döner.
-
-## [1.0] - 2026-10-24
-
-İlk sürüm.
-
-### Eklenenler
-- Menü çubuğunda çalışan, Dock'ta görünmeyen ekran görüntüsü aracı.
-- **⇧⌘2** ile dondurulmuş ekran üzerinde alan seçimi; tek tıkla tüm ekran; birden fazla ekran desteği.
-- Düzenleyici: ok, dikdörtgen, yuvarlak, kalem, metin, bulanıklaştırma ve pikselleştirme; 7 renk,
-  3 kalınlık; şekilleri seçme, taşıma ve silme; geri al / yinele.
-- **Kopyala (⌘C)** panoya kopyalar, pencereyi kapatır ve önceki uygulamaya döner.
-- **Kaydet** ve **Farklı Kaydet**; isteğe bağlı otomatik kayıt ve kayıt klasörü seçimi.
-- Ayarlar: Mac açılınca başlatma, kayıt klasörü, otomatik kayıt.
-- Hakkında paneli, uygulama simgesi ve tek dosyalık DMG kurulumu.
-
-[Yayınlanmamış]: https://github.com/mugione/Yakala/compare/v1.5...HEAD
-[1.5]: https://github.com/mugione/Yakala/releases/tag/v1.5
-[1.4.1]: https://github.com/mugione/Yakala/releases/tag/v1.4.1
-[1.4]: https://github.com/mugione/Yakala/releases/tag/v1.4
-[1.3]: https://github.com/mugione/Yakala/releases/tag/v1.3
-[1.2]: https://github.com/mugione/Yakala/releases/tag/v1.2
-[1.1]: https://github.com/mugione/Yakala/releases/tag/v1.1
-[1.0]: https://github.com/mugione/Yakala/releases/tag/v1.0
+- Bildirim alanında çalışan, görev çubuğunda yer kaplamayan ekran görüntüsü aracı; sol tık alan seçimi, sağ tık menü.
+- **Ctrl+Shift+2** ile dondurulmuş ekran üzerinde alan seçimi; tek tıkla tüm ekran; **Ctrl+Shift+1** ya da
+  **Boşluk** ile pencere seçimi. Windows 11'de pencere köşeleri saydam alınır.
+- Birden fazla ve farklı ölçekli ekran desteği (ör. %100 ve %300 yan yana).
+- Düzenleyici: ok, dikdörtgen, yuvarlak, kalem, vurgulayıcı, metin, etiket, numara, damga, büyüteç, bulanıklaştırma ve
+  pikselleştirme; 7 renk, 3 kalınlık; seçme, taşıma, silme; geri al / yinele.
+- **Güzelleştir:** 8 arka plan, boşluk, köşe, gölge, oranlar ve Windows 11 tarzı pencere çerçevesi (— □ ✕).
+- **Kopyala (Ctrl+C)**, **Kaydet (Ctrl+S)** ve **Farklı Kaydet (Ctrl+Shift+S)**; işlemden sonra önceki pencereye dönülür.
+- Hızlı mod, otomatik kayıt, kısayolları değiştirme, Windows açılışında başlatma.
+- Açık / koyu tema, sekmeli ayarlar, ilk açılışta karşılama penceresi.
+- Aynı anda yalnızca bir Yakala çalışır; yeniden açılınca ayarlar penceresi gelir.
